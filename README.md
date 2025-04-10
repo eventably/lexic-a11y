@@ -88,7 +88,7 @@ This will generate a bundled version of the editor that can be imported into you
 
 Integration in a React Project
 
-1. Import the Editor Component:
+## 1. Import the Editor Component
 
 In your React application, import the main Editor component:
 
@@ -110,7 +110,7 @@ export default function App() {
 }
 ```
 
-2. i18n Setup:
+## 2. i18n Setup
 
 Make sure your project wraps the application with an i18n provider:
 
@@ -129,7 +129,7 @@ ReactDOM.render(
 );
 ```
 
-3. Styling:
+## 3. Styling
 
 Include the provided CSS file (Editor.css) in your project to ensure proper styling of the tabs, toolbar, and editor components.
 
@@ -164,7 +164,21 @@ This will launch the application in development mode. Open http://localhost:3000
 * Edit the source files in the /src directory.
 * The development server supports hot reloading, so your changes will appear automatically.
 
-3. Building for Production:
+3. Running the Example Demo:
+
+The repository includes a simple example implementation that showcases how to use the editor component:
+
+```bash
+# First build the library
+npm run build
+
+# Then run the example
+npm run example
+```
+
+This will start a development server with the example at http://localhost:1234. The example demonstrates a basic integration of the editor component and displays the generated HTML output.
+
+4. Building for Production:
 
 Once you are satisfied with your changes, build the package for production:
 
@@ -172,7 +186,7 @@ Once you are satisfied with your changes, build the package for production:
 npm run build
 ```
 
-The production-ready files will be output to the /build directory.
+The production-ready files will be output to the /dist directory.
 
 ## Contributing
 
