@@ -26,7 +26,7 @@ import {
 // Table functionality removed
 import { useTranslation } from 'react-i18next';
 
-export function ToolbarPlugin({ setActiveTab }) {
+export function ToolbarPlugin({ showDocs, setShowDocs }) {
   const [editor] = useLexicalComposerContext();
   const { t } = useTranslation();
   const [showLinkDialog, setShowLinkDialog] = useState(false);
@@ -85,9 +85,9 @@ export function ToolbarPlugin({ setActiveTab }) {
             }
             break;
           }
-          case 'p':
+          case 'd':
             e.preventDefault();
-            setActiveTab('preview');
+            setShowDocs(prevState => !prevState);
             break;
           case '8':
             if (e.shiftKey) { // For * (Shift+8)
@@ -141,7 +141,7 @@ export function ToolbarPlugin({ setActiveTab }) {
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [editor, format, setActiveTab, t, setHeading]);
+  }, [editor, format, setShowDocs, t, setHeading]);
 
   // Register Escape key to move focus (switch to Preview tab).
   useEffect(() => {
@@ -152,12 +152,11 @@ export function ToolbarPlugin({ setActiveTab }) {
           setShowLinkDialog(false);
           return true;
         }
-        setActiveTab('preview');
-        return true;
+        return false;
       },
       COMMAND_PRIORITY_HIGH
     );
-  }, [editor, setActiveTab, showLinkDialog]);
+  }, [editor, showLinkDialog]);
 
   // Focus URL input when dialog opens
   useEffect(() => {
@@ -294,6 +293,21 @@ export function ToolbarPlugin({ setActiveTab }) {
             <line x1="9" y1="6" x2="20" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
             <line x1="9" y1="12" x2="20" y2="12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
             <line x1="9" y1="18" x2="20" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+          </svg>
+        </button>
+      </div>
+
+      <div className="toolbar-group toolbar-right">
+        <button 
+          onClick={() => setShowDocs(prevState => !prevState)} 
+          aria-label={t('showHelp')}
+          aria-pressed={showDocs}
+          className={`docs-button ${showDocs ? 'active' : ''}`}
+        >
+          <svg className="icon-help" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+            <path d="M12 18V18.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            <path d="M12 15C12 11 16 11 16 8C16 5.79086 14.2091 4 12 4C9.79086 4 8 5.79086 8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
           </svg>
         </button>
       </div>
