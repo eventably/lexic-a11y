@@ -18,7 +18,8 @@
     "test:watch": "jest --watch",
     "lint": "eslint 'src/**/*.{js,jsx}'",
     "prepare": "npm run build",
-    "example": "parcel serve examples/index.html --open"
+    "example": "parcel serve examples/index.html --open",
+    "codesandbox": "npm run build && parcel serve examples/index.html --entry-point examples/codesandbox.js"
   },
   "keywords": [
     "react",
