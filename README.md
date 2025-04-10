@@ -178,9 +178,9 @@ This will start a development server with the example at http://localhost:1234. 
 
 You can also try the editor directly on CodeSandbox without installing anything locally:
 
-[![Edit lexic-a11y](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/p/github/eventably/lexic-a11y/develop?file=%2Fdemo%2Findex.js)
+[![Edit lexic-a11y](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/p/sandbox/github/eventably/lexic-a11y/tree/develop/sandbox)
 
-This will open the demo directory in CodeSandbox where you can interact with the editor and experiment with the code.
+This opens our dedicated sandbox demo where you can interact with the editor and see how it works.
 
 4. Building for Production:
 

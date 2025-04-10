@@ -1,5 +1,5 @@
 {
-  "name": "@afixt/lexic-a11y",
+  "name": "@eventably/lexic-a11y",
   "version": "1.0.0",
   "description": "A fully featured, accessible, and internationalized rich text editor built with React and Lexical",
   "main": "dist/index.js",
