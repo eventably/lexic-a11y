@@ -63,115 +63,100 @@ const editorConfig = {
   ],
 };
 
-const TABS = ['edit', 'preview', 'docs'];
 
 export default function Editor({ onContentChange }) {
-  const [activeTab, setActiveTab] = useState('edit');
-  const [htmlOutput, setHtmlOutput] = useState('');
+  const [showDocs, setShowDocs] = useState(false);
+  const [, setHtmlOutput] = useState('');
 
   return (
     <LexicalComposer initialConfig={editorConfig}>
-      <div className="editor-tabs" role="tablist" aria-label="Editor view options">
-        {TABS.map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            aria-selected={activeTab === tab}
-            role="tab"
-            id={`${tab}Tab`}
-          >
-            {tab.charAt(0).toUpperCase() + tab.slice(1)}
-          </button>
-        ))}
-      </div>
-
-      <div className="editor-container" role="tabpanel" aria-labelledby={`${activeTab}Tab`}>
-        {activeTab === 'edit' && (
-          <>
-            <ToolbarPlugin setActiveTab={setActiveTab} />
-            <div className="editor-content-area">
-              <RichTextPlugin
-                contentEditable={<ContentEditable className="editor-input" />}
-                placeholder={<div className="editor-placeholder">Start writing...</div>}
-                ErrorBoundary={LexicalErrorBoundary}
-              />
-              <HistoryPlugin />
-              <LinkPlugin />
-              <ListPlugin />
-              <OnChangePlugin
-                onChange={(editorState, editor) => {
-                  editorState.read(() => {
-                    const htmlString = $generateHtmlFromNodes(editor, null);
-                    setHtmlOutput(htmlString);
-                    onContentChange(htmlString);
-                  });
-                }}
-              />
-            </div>
-          </>
-        )}
-        {activeTab === 'preview' && (
-          <div
-            className="editor-preview"
-            aria-label="Preview mode"
-            dangerouslySetInnerHTML={{ __html: htmlOutput }}
+      <ToolbarPlugin showDocs={showDocs} setShowDocs={setShowDocs} />
+      
+      <div className="editor-container">
+        <div className="editor-content-area">
+          <RichTextPlugin
+            contentEditable={<ContentEditable className="editor-input" />}
+            placeholder={<div className="editor-placeholder">Start writing...</div>}
+            ErrorBoundary={LexicalErrorBoundary}
           />
-        )}
-        {activeTab === 'docs' && (
-          <div className="editor-docs" aria-label="Editor documentation">
-            <h2>Editor Shortcuts</h2>
-            <ul>
-              <li>
-                <kbd>Ctrl</kbd> + <kbd>B</kbd>: Bold
-              </li>
-              <li>
-                <kbd>Ctrl</kbd> + <kbd>I</kbd>: Italic
-              </li>
-              <li>
-                <kbd>Ctrl</kbd> + <kbd>U</kbd>: Underline
-              </li>
-              <li>
-                <kbd>Ctrl</kbd> + <kbd>K</kbd>: Insert Link
-              </li>
-              <li>
-                <kbd>Ctrl</kbd> + <kbd>P</kbd>: Toggle Preview Mode
-              </li>
-              <li>
-                <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>8</kbd>: Bullet List
-              </li>
-              <li>
-                <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>7</kbd>: Numbered List
-              </li>
-              <li>
-                <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>1</kbd>: Heading 1
-              </li>
-              <li>
-                <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>2</kbd>: Heading 2
-              </li>
-              <li>
-                <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>3</kbd>: Heading 3
-              </li>
-              <li>
-                <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>4</kbd>: Heading 4
-              </li>
-              <li>
-                <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>5</kbd>: Heading 5
-              </li>
-              <li>
-                <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>6</kbd>: Heading 6
-              </li>
-              <li>
-                <kbd>Esc</kbd>: Exit editor focus (moves to Preview tab)
-              </li>
-            </ul>
-            <h3>Usage Tips</h3>
-            <p>
-              Use the toolbar buttons or keyboard shortcuts to format your content. Switch between Edit, Preview,
-              and Documentation tabs for a full experience.
-            </p>
-          </div>
-        )}
+          <HistoryPlugin />
+          <LinkPlugin />
+          <ListPlugin />
+          <OnChangePlugin
+            onChange={(editorState, editor) => {
+              editorState.read(() => {
+                const htmlString = $generateHtmlFromNodes(editor, null);
+                setHtmlOutput(htmlString);
+                onContentChange(htmlString);
+              });
+            }}
+          />
+        </div>
       </div>
+      
+      {showDocs && (
+        <div className="editor-docs-overlay" aria-label="Editor documentation">
+          <div className="editor-docs-content">
+            <div className="editor-docs-header">
+              <h2>Editor Shortcuts</h2>
+              <button 
+                onClick={() => setShowDocs(false)}
+                aria-label="Close documentation"
+                className="close-docs-button"
+              >
+                &times;
+              </button>
+            </div>
+            <div className="editor-docs-body">
+              <ul>
+                <li>
+                  <kbd>Ctrl</kbd> + <kbd>B</kbd>: Bold
+                </li>
+                <li>
+                  <kbd>Ctrl</kbd> + <kbd>I</kbd>: Italic
+                </li>
+                <li>
+                  <kbd>Ctrl</kbd> + <kbd>U</kbd>: Underline
+                </li>
+                <li>
+                  <kbd>Ctrl</kbd> + <kbd>K</kbd>: Insert Link
+                </li>
+                <li>
+                  <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>8</kbd>: Bullet List
+                </li>
+                <li>
+                  <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>7</kbd>: Numbered List
+                </li>
+                <li>
+                  <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>1</kbd>: Heading 1
+                </li>
+                <li>
+                  <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>2</kbd>: Heading 2
+                </li>
+                <li>
+                  <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>3</kbd>: Heading 3
+                </li>
+                <li>
+                  <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>4</kbd>: Heading 4
+                </li>
+                <li>
+                  <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>5</kbd>: Heading 5
+                </li>
+                <li>
+                  <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>6</kbd>: Heading 6
+                </li>
+                <li>
+                  <kbd>Esc</kbd>: Exit editor focus
+                </li>
+              </ul>
+              <h3>Usage Tips</h3>
+              <p>
+                Use the toolbar buttons or keyboard shortcuts to format your content.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </LexicalComposer>
   );
 }
