@@ -13,6 +13,7 @@ import { ListNode, ListItemNode } from '@lexical/list';
 import { QuoteNode } from '@lexical/rich-text';
 import { LinkNode } from '@lexical/link';
 import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin';
+import { ListPlugin } from '@lexical/react/LexicalListPlugin';
 // Temporarily comment out missing imports
 // import { ImageNode } from '@lexical/image';
 // import { HorizontalRuleNode } from '@lexical/react/LexicalHorizontalRuleNode';
@@ -96,6 +97,7 @@ export default function Editor({ onContentChange }) {
               />
               <HistoryPlugin />
               <LinkPlugin />
+              <ListPlugin />
               <OnChangePlugin
                 onChange={(editorState, editor) => {
                   editorState.read(() => {
@@ -133,6 +135,12 @@ export default function Editor({ onContentChange }) {
               </li>
               <li>
                 <kbd>Ctrl</kbd> + <kbd>P</kbd>: Toggle Preview Mode
+              </li>
+              <li>
+                <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>8</kbd>: Bullet List
+              </li>
+              <li>
+                <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>7</kbd>: Numbered List
               </li>
               <li>
                 <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>1</kbd>: Heading 1

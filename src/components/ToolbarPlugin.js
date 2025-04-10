@@ -16,6 +16,10 @@ import {
 } from '@lexical/rich-text';
 import { $createHeadingNode } from '@lexical/rich-text';
 import { TOGGLE_LINK_COMMAND } from '@lexical/link';
+import { 
+  INSERT_ORDERED_LIST_COMMAND,
+  INSERT_UNORDERED_LIST_COMMAND
+} from '@lexical/list';
 // Temporarily comment out missing imports
 // import { INSERT_IMAGE_COMMAND } from '@lexical/image';
 // import { INSERT_HORIZONTAL_RULE_COMMAND } from '@lexical/react/LexicalHorizontalRuleNode';
@@ -84,6 +88,18 @@ export function ToolbarPlugin({ setActiveTab }) {
           case 'p':
             e.preventDefault();
             setActiveTab('preview');
+            break;
+          case '8':
+            if (e.shiftKey) { // For * (Shift+8)
+              e.preventDefault();
+              editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined);
+            }
+            break;
+          case '7':
+            if (e.shiftKey) { // For & (Shift+7)
+              e.preventDefault();
+              editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined);
+            }
             break;
           default:
             break;
@@ -250,6 +266,35 @@ export function ToolbarPlugin({ setActiveTab }) {
             <path d="M8 12H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
           </svg>
           <span className="button-text">{t('link')}</span>
+        </button>
+      </div>
+
+      <div className="toolbar-group">
+        <button 
+          onClick={() => editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined)} 
+          aria-label={t('bulletList')}
+        >
+          <svg className="icon-list-ul" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="4" cy="6" r="2" fill="currentColor" />
+            <line x1="9" y1="6" x2="20" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            <circle cx="4" cy="12" r="2" fill="currentColor" />
+            <line x1="9" y1="12" x2="20" y2="12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            <circle cx="4" cy="18" r="2" fill="currentColor" />
+            <line x1="9" y1="18" x2="20" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+          </svg>
+        </button>
+        <button 
+          onClick={() => editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined)} 
+          aria-label={t('numberedList')}
+        >
+          <svg className="icon-list-ol" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 6H4V7H3V6Z" fill="currentColor" />
+            <path d="M3 10V9H5V6H3V5H5V4H4V3H3V4H2V6H3V7H2V9H3V10H2V12H5V10H3Z" fill="currentColor" />
+            <path d="M3 18H4V15H2V16H3V18Z" fill="currentColor" />
+            <line x1="9" y1="6" x2="20" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            <line x1="9" y1="12" x2="20" y2="12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            <line x1="9" y1="18" x2="20" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+          </svg>
         </button>
       </div>
 
