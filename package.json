@@ -2,7 +2,7 @@
   "name": "@afixt/lexic-a11y",
   "version": "1.0.0",
   "description": "A fully featured, accessible, and internationalized rich text editor built with React and Lexical",
-  "main": "sandbox.js",
+  "main": "dist/index.js",
   "module": "dist/index.esm.js",
   "types": "dist/index.d.ts",
   "files": [
