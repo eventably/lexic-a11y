@@ -174,6 +174,14 @@ npm run example
 
 This will start a development server with the example at http://localhost:1234. The example demonstrates a basic integration of the editor component and displays the generated HTML output.
 
+### Try it on CodeSandbox
+
+You can also try the editor directly on CodeSandbox without installing anything locally:
+
+[![Edit lexic-a11y](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/s/github/eventably/lexic-a11y/tree/develop)
+
+This will open the repository in CodeSandbox where you can interact with the demo and even make changes to experiment with the code.
+
 4. Building for Production:
 
 Once you are satisfied with your changes, build the package for production:
