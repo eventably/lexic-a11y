@@ -1,5 +1,5 @@
 {
-  "name": "@afixt/lexic-a11y",
+  "name": "@eventably/lexic-a11y",
   "version": "1.0.0",
   "description": "A fully featured, accessible, and internationalized rich text editor built with React and Lexical",
   "main": "dist/index.js",
@@ -19,7 +19,7 @@
     "lint": "eslint 'src/**/*.{js,jsx}'",
     "prepare": "npm run build",
     "example": "parcel serve examples/index.html --open",
-    "codesandbox": "npm run build && parcel serve examples/index.html --entry-point examples/codesandbox.js"
+    "codesandbox": "parcel serve sandbox.html"
   },
   "keywords": [
     "react",
@@ -42,6 +42,7 @@
     "@lexical/list": "^0.12.0",
     "@lexical/react": "^0.12.0",
     "@lexical/rich-text": "^0.12.0",
+    "@lexical/selection": "^0.12.6",
     "@lexical/table": "^0.12.0",
     "ajv": "^8.17.1",
     "i18next": "^23.0.0",

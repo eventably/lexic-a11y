@@ -1,0 +1,38 @@
+{
+  "name": "lexic-a11y-sandbox",
+  "version": "1.0.0",
+  "description": "CodeSandbox demo for lexic-a11y",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build"
+  },
+  "dependencies": {
+    "@lexical/html": "^0.12.0",
+    "@lexical/link": "^0.12.0",
+    "@lexical/list": "^0.12.0",
+    "@lexical/react": "^0.12.0",
+    "@lexical/rich-text": "^0.12.0",
+    "@lexical/table": "^0.12.0",
+    "i18next": "^23.0.0",
+    "lexical": "^0.12.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-i18next": "^13.0.0"
+  },
+  "devDependencies": {
+    "react-scripts": "5.0.1"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}

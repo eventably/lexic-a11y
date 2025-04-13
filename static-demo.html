@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lexical Editor Demo</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
+      line-height: 1.5;
+      margin: 0;
+      padding: 20px;
+      color: #333;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+      color: #2947c3;
+    }
+    .toolbar {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 10px;
+      padding: 10px;
+      background-color: #f5f7fa;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    .toolbar button {
+      padding: 8px 12px;
+      background-color: #fff;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .toolbar button:hover {
+      background-color: #e8efff;
+      border-color: #4361ee;
+    }
+    .toolbar button:active {
+      background-color: #4361ee;
+      color: white;
+    }
+    .editor {
+      min-height: 250px;
+      border: 1px solid #ddd;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 4px;
+    }
+    .output {
+      margin-top: 30px;
+      padding: 15px;
+      background-color: #f5f7fa;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    .output h2 {
+      margin-top: 0;
+    }
+    pre {
+      white-space: pre-wrap;
+      background-color: #ffffff;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    .keyboard-shortcuts {
+      margin-top: 30px;
+      padding: 15px;
+      background-color: #f5f7fa;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    kbd {
+      background-color: #eee;
+      border-radius: 3px;
+      border: 1px solid #b4b4b4;
+      box-shadow: 0 1px 1px rgba(0,0,0,.2);
+      color: #333;
+      display: inline-block;
+      font-size: 0.85em;
+      font-weight: 700;
+      line-height: 1;
+      padding: 2px 5px;
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Lexical Rich Text Editor Demo</h1>
+    
+    <p>This is a static demo of how the Lexical editor should look and function when properly implemented.</p>
+    
+    <div class="toolbar">
+      <button id="btn-bold">B</button>
+      <button id="btn-italic"><i>I</i></button>
+      <button id="btn-underline"><u>U</u></button>
+      <button id="btn-link">Link</button>
+      <button id="btn-h1">H1</button>
+      <button id="btn-h2">H2</button>
+      <button id="btn-ul">• List</button>
+      <button id="btn-ol">1. List</button>
+    </div>
+    
+    <div class="editor" contenteditable="true">
+      <p>This is a demonstration of the rich text editor.</p>
+      <p>Click the toolbar buttons to format text or try the keyboard shortcuts.</p>
+      <p>The editor supports <strong>bold</strong>, <em>italic</em>, <u>underline</u>, and <a href="#">links</a>.</p>
+      <p>It also supports:</p>
+      <ul>
+        <li>Bullet lists</li>
+        <li>With multiple items</li>
+      </ul>
+      <ol>
+        <li>Numbered lists</li>
+        <li>With multiple items</li>
+      </ol>
+      <h2>Heading 2 example</h2>
+      <p>And various heading levels for document structure.</p>
+    </div>
+    
+    <div class="output">
+      <h2>Generated HTML</h2>
+      <pre id="output-html">&lt;p&gt;This is a demonstration of the rich text editor.&lt;/p&gt;
+&lt;p&gt;Click the toolbar buttons to format text or try the keyboard shortcuts.&lt;/p&gt;
+&lt;p&gt;The editor supports &lt;strong&gt;bold&lt;/strong&gt;, &lt;em&gt;italic&lt;/em&gt;, &lt;u&gt;underline&lt;/u&gt;, and &lt;a href="#"&gt;links&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;It also supports:&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;Bullet lists&lt;/li&gt;
+  &lt;li&gt;With multiple items&lt;/li&gt;
+&lt;/ul&gt;
+&lt;ol&gt;
+  &lt;li&gt;Numbered lists&lt;/li&gt;
+  &lt;li&gt;With multiple items&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2&gt;Heading 2 example&lt;/h2&gt;
+&lt;p&gt;And various heading levels for document structure.&lt;/p&gt;</pre>
+    </div>
+    
+    <div class="keyboard-shortcuts">
+      <h2>Keyboard Shortcuts</h2>
+      <ul>
+        <li><kbd>Ctrl</kbd> + <kbd>B</kbd> - Bold</li>
+        <li><kbd>Ctrl</kbd> + <kbd>I</kbd> - Italic</li>
+        <li><kbd>Ctrl</kbd> + <kbd>U</kbd> - Underline</li>
+        <li><kbd>Ctrl</kbd> + <kbd>K</kbd> - Insert Link</li>
+        <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>7</kbd> - Numbered List</li>
+        <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>8</kbd> - Bullet List</li>
+        <li><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>1-6</kbd> - Headings 1-6</li>
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    // Simple script to update the HTML output when the editor content changes
+    const editor = document.querySelector('.editor');
+    const output = document.getElementById('output-html');
+    
+    editor.addEventListener('input', function() {
+      output.textContent = editor.innerHTML;
+    });
+    
+    // Basic formatting functionality for demo purposes
+    document.getElementById('btn-bold').addEventListener('click', function() {
+      document.execCommand('bold', false, null);
+      editor.focus();
+    });
+    
+    document.getElementById('btn-italic').addEventListener('click', function() {
+      document.execCommand('italic', false, null);
+      editor.focus();
+    });
+    
+    document.getElementById('btn-underline').addEventListener('click', function() {
+      document.execCommand('underline', false, null);
+      editor.focus();
+    });
+    
+    document.getElementById('btn-link').addEventListener('click', function() {
+      const url = prompt('Enter URL:', 'https://');
+      if (url) {
+        document.execCommand('createLink', false, url);
+      }
+      editor.focus();
+    });
+    
+    document.getElementById('btn-h1').addEventListener('click', function() {
+      document.execCommand('formatBlock', false, '<h1>');
+      editor.focus();
+    });
+    
+    document.getElementById('btn-h2').addEventListener('click', function() {
+      document.execCommand('formatBlock', false, '<h2>');
+      editor.focus();
+    });
+    
+    document.getElementById('btn-ul').addEventListener('click', function() {
+      document.execCommand('insertUnorderedList', false, null);
+      editor.focus();
+    });
+    
+    document.getElementById('btn-ol').addEventListener('click', function() {
+      document.execCommand('insertOrderedList', false, null);
+      editor.focus();
+    });
+    
+    // Add keyboard listeners
+    document.addEventListener('keydown', function(e) {
+      if (e.ctrlKey || e.metaKey) {
+        switch(e.key.toLowerCase()) {
+          case 'b':
+            e.preventDefault();
+            document.execCommand('bold', false, null);
+            break;
+          case 'i':
+            e.preventDefault();
+            document.execCommand('italic', false, null);
+            break;
+          case 'u':
+            e.preventDefault();
+            document.execCommand('underline', false, null);
+            break;
+          case 'k':
+            e.preventDefault();
+            const url = prompt('Enter URL:', 'https://');
+            if (url) {
+              document.execCommand('createLink', false, url);
+            }
+            break;
+        }
+      }
+    });
+  </script>
+</body>
+</html>
