@@ -7,6 +7,7 @@ import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
 import LexicalErrorBoundary from '@lexical/react/LexicalErrorBoundary';
 import { $generateHtmlFromNodes } from '@lexical/html';
+// No helper functions needed with the simplified HTML cleaning approach
 import { ToolbarPlugin } from './ToolbarPlugin';
 import { HeadingNode } from '@lexical/rich-text';
 import { ListNode, ListItemNode } from '@lexical/list';
@@ -85,9 +86,17 @@ export default function Editor({ onContentChange }) {
           <OnChangePlugin
             onChange={(editorState, editor) => {
               editorState.read(() => {
-                const htmlString = $generateHtmlFromNodes(editor, null);
-                setHtmlOutput(htmlString);
-                onContentChange(htmlString);
+                // Generate HTML with default export (no custom transformer)
+                const htmlString = $generateHtmlFromNodes(editor);
+                
+                // Use a simple regex to clean up the utility classes
+                const cleanHtml = htmlString
+                  .replace(/class="[^"]*"/g, '') // Remove all class attributes
+                  .replace(/<(h[1-6]|p|ul|ol|li)([^>]*)>/g, '<$1>') // Clean heading, paragraph, and list tags
+                  .replace(/<a([^>]*)(class="[^"]*")([^>]*)>/g, '<a$1$3>'); // Clean link tags
+                
+                setHtmlOutput(cleanHtml);
+                onContentChange(cleanHtml);
               });
             }}
           />

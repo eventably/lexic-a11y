@@ -6,24 +6,15 @@ import {
   $isRangeSelection,
   KEY_ESCAPE_COMMAND,
   COMMAND_PRIORITY_HIGH,
+  FORMAT_TEXT_COMMAND,
 } from 'lexical';
-import {
-  $toggleBold,
-  $toggleItalic,
-  $toggleUnderline,
-  $toggleStrikethrough,
-  $setBlocksType
-} from '@lexical/rich-text';
+import { $setBlocksType } from '@lexical/selection';
 import { $createHeadingNode } from '@lexical/rich-text';
 import { TOGGLE_LINK_COMMAND } from '@lexical/link';
 import { 
   INSERT_ORDERED_LIST_COMMAND,
   INSERT_UNORDERED_LIST_COMMAND
 } from '@lexical/list';
-// Temporarily comment out missing imports
-// import { INSERT_IMAGE_COMMAND } from '@lexical/image';
-// import { INSERT_HORIZONTAL_RULE_COMMAND } from '@lexical/react/LexicalHorizontalRuleNode';
-// Table functionality removed
 import { useTranslation } from 'react-i18next';
 
 export function ToolbarPlugin({ showDocs, setShowDocs }) {
@@ -35,26 +26,24 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
   const dialogRef = useRef(null);
   const urlInputRef = useRef(null);
 
-  const format = useCallback((action) => {
-    editor.update(() => {
-      const selection = $getSelection();
-      if ($isRangeSelection(selection)) {
-        action(selection);
-      }
-    });
-  }, [editor]);
-
-  // Helper to apply heading formatting.
+  // Helper to apply heading formatting
   const setHeading = useCallback((tag) => {
     editor.update(() => {
       const selection = $getSelection();
       if ($isRangeSelection(selection)) {
-        $setBlocksType(selection, () => $createHeadingNode(tag));
+        try {
+          $setBlocksType(selection, () => $createHeadingNode(tag));
+        } catch (error) {
+          console.error('Error applying heading:', error);
+          // Fallback implementation
+          const element = $createHeadingNode(tag);
+          selection.insertNodes([element]);
+        }
       }
     });
   }, [editor]);
 
-  // Register keyboard shortcuts.
+  // Register keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
       const isMac = navigator.platform.toUpperCase().includes('MAC');
@@ -62,20 +51,20 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
 
       if (!mod && e.key !== 'Escape') return;
 
-      // Basic formatting shortcuts.
+      // Basic formatting shortcuts
       if (mod && !e.altKey) {
         switch (e.key.toLowerCase()) {
           case 'b':
             e.preventDefault();
-            format($toggleBold);
+            editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold');
             break;
           case 'i':
             e.preventDefault();
-            format($toggleItalic);
+            editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'italic');
             break;
           case 'u':
             e.preventDefault();
-            format($toggleUnderline);
+            editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'underline');
             break;
           case 'k': {
             e.preventDefault();
@@ -106,7 +95,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
         }
       }
 
-      // Heading shortcuts with Ctrl/Cmd + Alt + [1-6].
+      // Heading shortcuts with Ctrl/Cmd + Alt + [1-6]
       if (mod && e.altKey) {
         switch (e.key) {
           case '1':
@@ -141,9 +130,9 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [editor, format, setShowDocs, t, setHeading]);
+  }, [editor, setShowDocs, t, setHeading]);
 
-  // Register Escape key to move focus (switch to Preview tab).
+  // Register Escape key to close link dialog
   useEffect(() => {
     return editor.registerCommand(
       KEY_ESCAPE_COMMAND,
@@ -168,50 +157,41 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
     }
   }, [showLinkDialog]);
 
-  // Image upload functionality to be implemented later
-  // const handleImageUpload = (e) => {
-  //   const file = e.target.files?.[0];
-  //   if (file) {
-  //     const reader = new FileReader();
-  //     reader.onload = () => {
-  //       const url = reader.result;
-  //       const altText = window.prompt(t('enterAltText'));
-  //       if (typeof url === 'string') {
-  //         // Temporarily commented out due to missing import
-  //         // editor.dispatchCommand(INSERT_IMAGE_COMMAND, {
-  //         //   src: url,
-  //         //   altText: altText || '',
-  //         // });
-  //         console.log('Image upload not available in this version');
-  //       }
-  //     };
-  //     reader.readAsDataURL(file);
-  //   }
-  // };
-
   return (
     <div className="editor-toolbar" role="toolbar" aria-label={t('editorToolbar')}>
       <div className="toolbar-group">
-        <button onClick={() => format($toggleBold)} aria-label={t('bold')}>
+        <button 
+          onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold')} 
+          aria-label={t('bold')}
+        >
           <svg className="icon-bold" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M6 12H14C16.2091 12 18 10.2091 18 8C18 5.79086 16.2091 4 14 4H6V12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             <path d="M6 12H15C17.2091 12 19 13.7909 19 16C19 18.2091 17.2091 20 15 20H6V12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </button>
-        <button onClick={() => format($toggleItalic)} aria-label={t('italic')}>
+        <button 
+          onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'italic')} 
+          aria-label={t('italic')}
+        >
           <svg className="icon-italic" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M19 4H10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             <path d="M14 20H5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             <path d="M14.5 4L9.5 20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </button>
-        <button onClick={() => format($toggleUnderline)} aria-label={t('underline')}>
+        <button 
+          onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'underline')} 
+          aria-label={t('underline')}
+        >
           <svg className="icon-underline" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M6 3V10C6 13.3137 8.68629 16 12 16C15.3137 16 18 13.3137 18 10V3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             <path d="M4 21H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </button>
-        <button onClick={() => format($toggleStrikethrough)} aria-label={t('strikethrough')}>
+        <button 
+          onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'strikethrough')} 
+          aria-label={t('strikethrough')}
+        >
           <svg className="icon-strikethrough" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M4 12H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             <path d="M16 6C16 6 14.5 4 12 4C9.5 4 8 5.5 8 7.5C8 9.5 9 10 12 11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -313,12 +293,16 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
       </div>
 
       {showLinkDialog && (
-        // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
         <div 
           className="link-dialog-overlay"
           onClick={() => setShowLinkDialog(false)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              setShowLinkDialog(false);
+            }
+          }}
+          role="presentation"
         >
-          {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
           <div 
             ref={dialogRef}
             className="link-dialog" 
@@ -326,7 +310,6 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
             aria-modal="true"
             aria-labelledby="link-dialog-title"
             tabIndex={-1}
-            onClick={(e) => e.stopPropagation()}
           >
             <h3 id="link-dialog-title">{t('insertLink')}</h3>
             <div className="link-dialog-form">
@@ -340,8 +323,6 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
                   onChange={(e) => setLinkUrl(e.target.value)}
                   placeholder="https://example.com"
                   aria-required="true"
-                  // Using custom focus management via useEffect instead
-                  // autoFocus
                 />
               </div>
 
