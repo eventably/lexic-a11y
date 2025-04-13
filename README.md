@@ -45,8 +45,8 @@ lexic-a11y is a self-contained, React-based editor that emphasizes accessibility
 
 ### Prerequisites
 
-* Node.js (v12+ recommended)
-* React (v16.8+ for Hooks support)
+* Node.js (v14+ recommended)
+* React (v16.8+, v17.0.0+, or v18.0.0+ for Hooks support)
 * Package Manager (npm, Yarn, or similar)
 
 ### Steps
@@ -54,7 +54,7 @@ lexic-a11y is a self-contained, React-based editor that emphasizes accessibility
 1. Clone the Repository:
 
 ```bash
-git clone git@github.com:eventably/lexic-a11y.git
+git clone https://github.com/eventably/lexic-a11y.git
 cd lexic-a11y
 ```
 
@@ -90,8 +90,8 @@ In your React application, import the main Editor component:
 
 ```javascript
 import React, { useState } from 'react';
-import Editor from '@afixt/lexic-a11y';
-import '@afixt/lexic-a11y/dist/styles.css'; // Import the styles
+import Editor from '@eventably/lexic-a11y';
+import '@eventably/lexic-a11y/dist/styles.css'; // Import the styles
 
 export default function App() {
   const [content, setContent] = useState('');
@@ -116,7 +116,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { I18nextProvider } from 'react-i18next';
-import i18n from '@afixt/lexic-a11y/dist/i18n';
+import i18n from '@eventably/lexic-a11y/dist/i18n';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
@@ -174,6 +174,12 @@ npm run example
 
 This will start a development server with the example at http://localhost:1234. The example demonstrates a basic integration of the editor component and displays the generated HTML output.
 
+You can also view the demo directly with:
+
+```bash
+npm run build && npm run example
+```
+
 ### Try it on CodeSandbox
 
 You can also try the editor directly on CodeSandbox without installing anything locally:
@@ -182,7 +188,7 @@ You can also try the editor directly on CodeSandbox without installing anything 
 
 This opens our dedicated sandbox demo where you can interact with the editor and see how it works.
 
-4. Building for Production:
+### Building for Production:
 
 Once you are satisfied with your changes, build the package for production:
 
