@@ -4,16 +4,20 @@ import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext
 import {
   $getSelection,
   $isRangeSelection,
+  $createParagraphNode,
   KEY_ESCAPE_COMMAND,
   COMMAND_PRIORITY_HIGH,
   FORMAT_TEXT_COMMAND,
 } from 'lexical';
 import { $setBlocksType } from '@lexical/selection';
-import { $createHeadingNode } from '@lexical/rich-text';
+import { $createHeadingNode, $isHeadingNode } from '@lexical/rich-text';
 import { TOGGLE_LINK_COMMAND } from '@lexical/link';
 import { 
   INSERT_ORDERED_LIST_COMMAND,
-  INSERT_UNORDERED_LIST_COMMAND
+  INSERT_UNORDERED_LIST_COMMAND,
+  REMOVE_LIST_COMMAND,
+  $isListNode,
+  $isListItemNode
 } from '@lexical/list';
 import { useTranslation } from 'react-i18next';
 
@@ -23,19 +27,54 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
   const [showLinkDialog, setShowLinkDialog] = useState(false);
   const [linkUrl, setLinkUrl] = useState('');
   const [linkText, setLinkText] = useState('');
+  const [activeHeadingTag, setActiveHeadingTag] = useState(null);
+  const [isOrderedListActive, setIsOrderedListActive] = useState(false);
+  const [isUnorderedListActive, setIsUnorderedListActive] = useState(false);
+  const [isBold, setIsBold] = useState(false);
+  const [isItalic, setIsItalic] = useState(false);
+  const [isUnderline, setIsUnderline] = useState(false);
+  const [isStrikethrough, setIsStrikethrough] = useState(false);
   const dialogRef = useRef(null);
   const urlInputRef = useRef(null);
 
-  // Helper to apply heading formatting
+  // Helper to apply heading formatting with toggle functionality
   const setHeading = useCallback((tag) => {
     editor.update(() => {
       const selection = $getSelection();
-      if ($isRangeSelection(selection)) {
-        try {
+      if (!$isRangeSelection(selection)) return;
+      
+      // Check if selection is already the same heading type
+      let isAlreadyHeadingType = false;
+      const anchorNode = selection.anchor.getNode();
+      const focusNode = selection.focus.getNode();
+      
+      // Check the nearest block parent of selection
+      const anchorParent = anchorNode.getParent();
+      const focusParent = focusNode.getParent();
+      
+      // Simple case: heading is direct parent
+      if (
+        ($isHeadingNode(anchorParent) && anchorParent.getTag() === tag) ||
+        ($isHeadingNode(focusParent) && focusParent.getTag() === tag)
+      ) {
+        isAlreadyHeadingType = true;
+      }
+      
+      try {
+        if (isAlreadyHeadingType) {
+          // Convert to paragraph if already the heading type
+          $setBlocksType(selection, () => $createParagraphNode());
+        } else {
+          // Convert to specified heading type
           $setBlocksType(selection, () => $createHeadingNode(tag));
-        } catch (error) {
-          console.error('Error applying heading:', error);
-          // Fallback implementation
+        }
+      } catch (error) {
+        console.error('Error applying heading:', error);
+        // Fallback implementation
+        if (isAlreadyHeadingType) {
+          const paragraph = $createParagraphNode();
+          selection.insertNodes([paragraph]);
+        } else {
           const element = $createHeadingNode(tag);
           selection.insertNodes([element]);
         }
@@ -146,6 +185,208 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
       COMMAND_PRIORITY_HIGH
     );
   }, [editor, showLinkDialog]);
+  
+  // Helper function to toggle list formats
+  const toggleList = useCallback((listType) => {
+    try {
+      if (listType === 'bullet' && isUnorderedListActive) {
+        // Remove the list if it's already active
+        editor.dispatchCommand(REMOVE_LIST_COMMAND, undefined);
+      } else if (listType === 'number' && isOrderedListActive) {
+        // Remove the list if it's already active
+        editor.dispatchCommand(REMOVE_LIST_COMMAND, undefined);
+      } else {
+        // Apply the appropriate list type
+        if (listType === 'bullet') {
+          editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined);
+        } else if (listType === 'number') {
+          editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined);
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling list:', error);
+    }
+  }, [editor, isOrderedListActive, isUnorderedListActive]);
+
+  // Update active formats when selection changes
+  useEffect(() => {
+    const updateToolbar = () => {
+      try {
+        const editorState = editor.getEditorState();
+        
+        editorState.read(() => {
+          try {
+            const selection = $getSelection();
+            
+            // Reset all format states when there's no valid selection
+            if (!selection || !$isRangeSelection(selection)) {
+              setActiveHeadingTag(null);
+              setIsOrderedListActive(false);
+              setIsUnorderedListActive(false);
+              setIsBold(false);
+              setIsItalic(false);
+              setIsUnderline(false);
+              setIsStrikethrough(false);
+              return;
+            }
+            
+            // Check for text formatting (bold, italic, etc.)
+            try {
+              // Only check format types when there's actual text content and selection is not collapsed
+              const textContent = selection.getTextContent();
+              const hasTextAndSelection = textContent && textContent.length > 0 && !selection.isCollapsed();
+              
+              // Default to false when no text is selected
+              let boldActive = false;
+              let italicActive = false;
+              let underlineActive = false;
+              let strikethroughActive = false;
+              
+              if (hasTextAndSelection) {
+                // In Lexical, format types are represented by numerical values
+                // We'll use the hasFormat method that's available on the selection
+                boldActive = selection.hasFormat('bold');
+                italicActive = selection.hasFormat('italic');
+                underlineActive = selection.hasFormat('underline');
+                strikethroughActive = selection.hasFormat('strikethrough');
+              }
+              
+              // Update state for each format type
+              setIsBold(boldActive);
+              setIsItalic(italicActive);
+              setIsUnderline(underlineActive);
+              setIsStrikethrough(strikethroughActive);
+            } catch (error) {
+              // Reset formatting state on error
+              setIsBold(false);
+              setIsItalic(false);
+              setIsUnderline(false);
+              setIsStrikethrough(false);
+            }
+            
+            // Check for headings, lists, etc.
+            let headingTag = null;
+            let orderedListActive = false;
+            let unorderedListActive = false;
+            
+            try {
+              // Get the anchor node safely
+              const anchorNode = selection.anchor.getNode();
+              if (!anchorNode) return;
+              
+              // Helper to check for headings
+              const findHeadingTag = (node) => {
+                if (!node) return null;
+                
+                // Check if node is a heading
+                if ($isHeadingNode(node)) {
+                  return node.getTag();
+                }
+                
+                // Check parent
+                try {
+                  const parent = node.getParent();
+                  if (parent && $isHeadingNode(parent)) {
+                    return parent.getTag();
+                  }
+                } catch (e) {
+                  // Ignore errors when getting parent
+                }
+                
+                return null;
+              };
+              
+              // Find headings
+              headingTag = findHeadingTag(anchorNode);
+              
+              // Helper to safely get parent
+              const getParentSafely = (node) => {
+                if (!node) return null;
+                try {
+                  return node.getParent();
+                } catch (e) {
+                  return null;
+                }
+              };
+              
+              // Check for lists by traversing up the tree
+              let current = anchorNode;
+              let depth = 0;
+              while (current && depth < 10) {
+                if ($isListItemNode(current)) {
+                  // Found a list item, find its parent list
+                  let listParent = getParentSafely(current);
+                  while (listParent && !$isListNode(listParent)) {
+                    listParent = getParentSafely(listParent);
+                  }
+                  
+                  if (listParent && $isListNode(listParent)) {
+                    try {
+                      const listType = listParent.getListType();
+                      if (listType === 'bullet') {
+                        unorderedListActive = true;
+                      } else if (listType === 'number') {
+                        orderedListActive = true;
+                      }
+                    } catch (e) {
+                      // Ignore list type errors
+                    }
+                  }
+                  break;
+                }
+                
+                current = getParentSafely(current);
+                depth++;
+              }
+            } catch (e) {
+              // Silently fail node traversal
+            }
+            
+            // Update state with active formats
+            setActiveHeadingTag(headingTag);
+            setIsOrderedListActive(orderedListActive);
+            setIsUnorderedListActive(unorderedListActive);
+          } catch (e) {
+            // Reset all states if there's an error
+            setActiveHeadingTag(null);
+            setIsOrderedListActive(false);
+            setIsUnorderedListActive(false);
+            setIsBold(false);
+            setIsItalic(false);
+            setIsUnderline(false);
+            setIsStrikethrough(false);
+          }
+        });
+      } catch (error) {
+        // Silently fail the entire update
+      }
+    };
+    
+    // Run on mount and register a listener
+    updateToolbar();
+    
+    // Set up two listeners - one for editor changes and one for selection changes
+    const removeUpdateListener = editor.registerUpdateListener(() => {
+      // Just call updateToolbar - it has its own error handling
+      updateToolbar();
+    });
+    
+    // Also register for selection changes
+    const removeSelectionListener = editor.registerCommand(
+      'selection-change',
+      () => {
+        updateToolbar();
+        return false; // Don't block other handlers
+      },
+      COMMAND_PRIORITY_HIGH
+    );
+    
+    // Clean up both listeners
+    return () => {
+      removeUpdateListener();
+      removeSelectionListener();
+    };
+  }, [editor]);
 
   // Focus URL input when dialog opens
   useEffect(() => {
@@ -163,6 +404,8 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
         <button 
           onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold')} 
           aria-label={t('bold')}
+          className={isBold ? 'active' : ''}
+          aria-pressed={isBold}
         >
           <svg className="icon-bold" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M6 12H14C16.2091 12 18 10.2091 18 8C18 5.79086 16.2091 4 14 4H6V12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -172,6 +415,8 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
         <button 
           onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'italic')} 
           aria-label={t('italic')}
+          className={isItalic ? 'active' : ''}
+          aria-pressed={isItalic}
         >
           <svg className="icon-italic" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M19 4H10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -182,6 +427,8 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
         <button 
           onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'underline')} 
           aria-label={t('underline')}
+          className={isUnderline ? 'active' : ''}
+          aria-pressed={isUnderline}
         >
           <svg className="icon-underline" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M6 3V10C6 13.3137 8.68629 16 12 16C15.3137 16 18 13.3137 18 10V3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -191,6 +438,8 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
         <button 
           onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'strikethrough')} 
           aria-label={t('strikethrough')}
+          className={isStrikethrough ? 'active' : ''}
+          aria-pressed={isStrikethrough}
         >
           <svg className="icon-strikethrough" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M4 12H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -201,22 +450,52 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
       </div>
 
       <div className="toolbar-group">
-        <button onClick={() => setHeading('h1')} aria-label={t('heading1')} className="heading-button">
+        <button 
+          onClick={() => setHeading('h1')} 
+          aria-label={t('heading1')} 
+          className={`heading-button ${activeHeadingTag === 'h1' ? 'active' : ''}`}
+          aria-pressed={activeHeadingTag === 'h1' ? true : false}
+        >
           H1
         </button>
-        <button onClick={() => setHeading('h2')} aria-label={t('heading2')} className="heading-button">
+        <button 
+          onClick={() => setHeading('h2')} 
+          aria-label={t('heading2')} 
+          className={`heading-button ${activeHeadingTag === 'h2' ? 'active' : ''}`}
+          aria-pressed={activeHeadingTag === 'h2' ? true : false}
+        >
           H2
         </button>
-        <button onClick={() => setHeading('h3')} aria-label={t('heading3')} className="heading-button">
+        <button 
+          onClick={() => setHeading('h3')} 
+          aria-label={t('heading3')} 
+          className={`heading-button ${activeHeadingTag === 'h3' ? 'active' : ''}`}
+          aria-pressed={activeHeadingTag === 'h3' ? true : false}
+        >
           H3
         </button>
-        <button onClick={() => setHeading('h4')} aria-label={t('heading4')} className="heading-button">
+        <button 
+          onClick={() => setHeading('h4')} 
+          aria-label={t('heading4')} 
+          className={`heading-button ${activeHeadingTag === 'h4' ? 'active' : ''}`}
+          aria-pressed={activeHeadingTag === 'h4' ? true : false}
+        >
           H4
         </button>
-        <button onClick={() => setHeading('h5')} aria-label={t('heading5')} className="heading-button">
+        <button 
+          onClick={() => setHeading('h5')} 
+          aria-label={t('heading5')} 
+          className={`heading-button ${activeHeadingTag === 'h5' ? 'active' : ''}`}
+          aria-pressed={activeHeadingTag === 'h5' ? true : false}
+        >
           H5
         </button>
-        <button onClick={() => setHeading('h6')} aria-label={t('heading6')} className="heading-button">
+        <button 
+          onClick={() => setHeading('h6')} 
+          aria-label={t('heading6')} 
+          className={`heading-button ${activeHeadingTag === 'h6' ? 'active' : ''}`}
+          aria-pressed={activeHeadingTag === 'h6' ? true : false}
+        >
           H6
         </button>
       </div>
@@ -250,8 +529,10 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
 
       <div className="toolbar-group">
         <button 
-          onClick={() => editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined)} 
+          onClick={() => toggleList('bullet')} 
           aria-label={t('bulletList')}
+          className={isUnorderedListActive ? 'active' : ''}
+          aria-pressed={isUnorderedListActive ? true : false}
         >
           <svg className="icon-list-ul" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <circle cx="4" cy="6" r="2" fill="currentColor" />
@@ -263,8 +544,10 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
           </svg>
         </button>
         <button 
-          onClick={() => editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined)} 
+          onClick={() => toggleList('number')} 
           aria-label={t('numberedList')}
+          className={isOrderedListActive ? 'active' : ''}
+          aria-pressed={isOrderedListActive ? true : false}
         >
           <svg className="icon-list-ol" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M3 6H4V7H3V6Z" fill="currentColor" />
