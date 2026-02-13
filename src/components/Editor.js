@@ -1,23 +1,33 @@
 // Editor.js
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { LexicalComposer } from '@lexical/react/LexicalComposer';
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
 import { ContentEditable } from '@lexical/react/LexicalContentEditable';
 import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
 import LexicalErrorBoundary from '@lexical/react/LexicalErrorBoundary';
+import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { $generateHtmlFromNodes } from '@lexical/html';
-// No helper functions needed with the simplified HTML cleaning approach
 import { ToolbarPlugin } from './ToolbarPlugin';
+import { Shortcuts } from './Shortcuts';
 import { HeadingNode } from '@lexical/rich-text';
 import { ListNode, ListItemNode } from '@lexical/list';
 import { QuoteNode } from '@lexical/rich-text';
 import { LinkNode } from '@lexical/link';
 import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin';
 import { ListPlugin } from '@lexical/react/LexicalListPlugin';
-// Temporarily comment out missing imports
-// import { ImageNode } from '@lexical/image';
-// import { HorizontalRuleNode } from '@lexical/react/LexicalHorizontalRuleNode';
+import { useTranslation } from 'react-i18next';
+
+// Counter-based ID generator (React 16.8+ compatible alternative to useId)
+let editorIdCounter = 0;
+function useEditorId() {
+  const idRef = React.useRef(null);
+  if (idRef.current === null) {
+    editorIdCounter += 1;
+    idRef.current = `lexic-editor-${editorIdCounter}`;
+  }
+  return idRef.current;
+}
 
 const theme = {
   text: {
@@ -59,113 +69,213 @@ const editorConfig = {
     ListItemNode,
     QuoteNode,
     LinkNode,
-    // ImageNode,
-    // HorizontalRuleNode,
   ],
 };
 
+// Inner component that has access to the Lexical composer context
+function EditorContent({ editorId, label, required, t }) {
+  const [editor] = useLexicalComposerContext();
 
-export default function Editor({ onContentChange }) {
-  const [showDocs, setShowDocs] = useState(false);
-  const [, setHtmlOutput] = useState('');
+  const handleContentKeyDown = useCallback((e) => {
+    // Shift+Tab from editor content area moves focus to the help button in toolbar
+    if (e.key === 'Tab' && e.shiftKey) {
+      e.preventDefault();
+      const editorBox = e.target.closest('.editor-box');
+      if (editorBox) {
+        const helpButton = editorBox.querySelector('.docs-button');
+        if (helpButton) {
+          helpButton.focus();
+        }
+      }
+    }
+  }, []);
+
+  const handleContentClick = useCallback(() => {
+    editor.focus();
+  }, [editor]);
+
+  const ariaLabel = [
+    label,
+    t('editorTitle'),
+    required ? t('required') : '',
+  ].filter(Boolean).join(' - ');
 
   return (
-    <LexicalComposer initialConfig={editorConfig}>
-      <ToolbarPlugin showDocs={showDocs} setShowDocs={setShowDocs} />
-      
-      <div className="editor-container">
-        <div className="editor-content-area">
-          <RichTextPlugin
-            contentEditable={<ContentEditable className="editor-input" />}
-            placeholder={<div className="editor-placeholder">Start writing...</div>}
-            ErrorBoundary={LexicalErrorBoundary}
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
+    <div className="editor-content-area" onClick={handleContentClick}>
+      <RichTextPlugin
+        contentEditable={
+          <ContentEditable
+            id={editorId}
+            className="editor-input"
+            aria-label={ariaLabel}
+            aria-multiline="true"
+            aria-required={required ? 'true' : undefined}
+            tabIndex={-1}
+            onKeyDown={handleContentKeyDown}
           />
-          <HistoryPlugin />
-          <LinkPlugin />
-          <ListPlugin />
-          <OnChangePlugin
-            onChange={(editorState, editor) => {
-              editorState.read(() => {
-                // Generate HTML with default export (no custom transformer)
-                const htmlString = $generateHtmlFromNodes(editor);
-                
-                // Use a simple regex to clean up the utility classes
-                const cleanHtml = htmlString
-                  .replace(/class="[^"]*"/g, '') // Remove all class attributes
-                  .replace(/<(h[1-6]|p|ul|ol|li)([^>]*)>/g, '<$1>') // Clean heading, paragraph, and list tags
-                  .replace(/<a([^>]*)(class="[^"]*")([^>]*)>/g, '<a$1$3>'); // Clean link tags
-                
-                setHtmlOutput(cleanHtml);
-                onContentChange(cleanHtml);
-              });
-            }}
-          />
-        </div>
-      </div>
-      
-      {showDocs && (
-        <div className="editor-docs-overlay" aria-label="Editor documentation">
-          <div className="editor-docs-content">
-            <div className="editor-docs-header">
-              <h2>Editor Shortcuts</h2>
-              <button 
-                onClick={() => setShowDocs(false)}
-                aria-label="Close documentation"
-                className="close-docs-button"
-              >
-                &times;
-              </button>
-            </div>
-            <div className="editor-docs-body">
-              <ul>
-                <li>
-                  <kbd>Ctrl</kbd> + <kbd>B</kbd>: Bold
-                </li>
-                <li>
-                  <kbd>Ctrl</kbd> + <kbd>I</kbd>: Italic
-                </li>
-                <li>
-                  <kbd>Ctrl</kbd> + <kbd>U</kbd>: Underline
-                </li>
-                <li>
-                  <kbd>Ctrl</kbd> + <kbd>K</kbd>: Insert Link
-                </li>
-                <li>
-                  <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>8</kbd>: Bullet List
-                </li>
-                <li>
-                  <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>7</kbd>: Numbered List
-                </li>
-                <li>
-                  <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>1</kbd>: Heading 1
-                </li>
-                <li>
-                  <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>2</kbd>: Heading 2
-                </li>
-                <li>
-                  <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>3</kbd>: Heading 3
-                </li>
-                <li>
-                  <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>4</kbd>: Heading 4
-                </li>
-                <li>
-                  <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>5</kbd>: Heading 5
-                </li>
-                <li>
-                  <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>6</kbd>: Heading 6
-                </li>
-                <li>
-                  <kbd>Esc</kbd>: Exit editor focus
-                </li>
-              </ul>
-              <h3>Usage Tips</h3>
-              <p>
-                Use the toolbar buttons or keyboard shortcuts to format your content.
-              </p>
-            </div>
-          </div>
+        }
+        placeholder={<div className="editor-placeholder">Start writing...</div>}
+        ErrorBoundary={LexicalErrorBoundary}
+      />
+    </div>
+  );
+}
+
+
+export default function Editor({ onContentChange, label, required, error, errorMessage }) {
+  const [showDocs, setShowDocs] = useState(false);
+  const [, setHtmlOutput] = useState('');
+  const docsButtonRef = useRef(null);
+  const editorId = useEditorId();
+  const { t } = useTranslation();
+
+  const descriptionId = `${editorId}-description`;
+  const errorId = `${editorId}-error`;
+
+  // Build aria-label for the editor group
+  const groupAriaLabel = [
+    label,
+    t('editorTitle'),
+    required ? `(${t('required')})` : '',
+  ].filter(Boolean).join(' ');
+
+  // Build aria-describedby
+  const describedByParts = [descriptionId];
+  if (error && errorMessage) {
+    describedByParts.push(errorId);
+  }
+
+  const handleEditorBoxKeyDown = useCallback((e) => {
+    // Enter or Space on the editor-box itself (not on child elements) focuses the content editable
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.classList.contains('editor-box')) {
+      e.preventDefault();
+      const contentEditable = e.target.querySelector('.editor-input');
+      if (contentEditable) {
+        contentEditable.focus();
+      }
+    }
+  }, []);
+
+  const handleLabelClick = useCallback(() => {
+    const contentEditable = document.getElementById(editorId);
+    if (contentEditable) {
+      contentEditable.focus();
+    }
+  }, [editorId]);
+
+  const handleDocsOverlayClick = useCallback((e) => {
+    // Only close when clicking the overlay background, not child elements
+    if (e.target === e.currentTarget) {
+      setShowDocs(false);
+    }
+  }, []);
+
+  return (
+    <div>
+      {label && (
+        <div className="editor-label-container">
+          <span
+            className={`editor-label ${error ? 'editor-label-error' : ''}`}
+            role="button"
+            tabIndex={0}
+            onClick={handleLabelClick}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleLabelClick(); } }}
+            data-editor-for={editorId}
+          >
+            {label}
+          </span>
+          {required && (
+            <span className="editor-required-indicator" aria-hidden="true">*</span>
+          )}
         </div>
       )}
-    </LexicalComposer>
+
+      <LexicalComposer initialConfig={editorConfig}>
+        {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
+        <div
+          className={`editor-box ${error ? 'editor-box-error' : ''}`}
+          role="group"
+          aria-label={groupAriaLabel}
+          aria-describedby={describedByParts.join(' ')}
+          onKeyDown={handleEditorBoxKeyDown}
+        >
+          <span id={descriptionId} className="sr-only">
+            {t('editorDescription')}
+          </span>
+
+          <ToolbarPlugin
+            showDocs={showDocs}
+            setShowDocs={setShowDocs}
+            docsButtonRef={docsButtonRef}
+          />
+
+          <div className="editor-container">
+            <EditorContent
+              editorId={editorId}
+              label={label}
+              required={required}
+              t={t}
+            />
+            <HistoryPlugin />
+            <LinkPlugin />
+            <ListPlugin />
+            <OnChangePlugin
+              onChange={(editorState, editor) => {
+                editorState.read(() => {
+                  const htmlString = $generateHtmlFromNodes(editor);
+                  const cleanHtml = htmlString
+                    .replace(/class="[^"]*"/g, '')
+                    .replace(/<(h[1-6]|p|ul|ol|li)([^>]*)>/g, '<$1>')
+                    .replace(/<a([^>]*)(class="[^"]*")([^>]*)>/g, '<a$1$3>');
+                  setHtmlOutput(cleanHtml);
+                  onContentChange(cleanHtml);
+                });
+              }}
+            />
+          </div>
+        </div>
+
+        {showDocs && (
+          // eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events
+          <div
+            className="editor-docs-overlay"
+            onClick={handleDocsOverlayClick}
+          >
+            {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
+            <div
+              className="editor-docs-content"
+              role="dialog"
+              aria-modal="true"
+              aria-label={t('editorShortcutsTitle')}
+              onKeyDown={(e) => { if (e.key === 'Escape') setShowDocs(false); }}
+            >
+              <div className="editor-docs-header">
+                <h2>{t('editorShortcutsTitle')}</h2>
+                <button
+                  type="button"
+                  onClick={() => setShowDocs(false)}
+                  aria-label="Close documentation"
+                  className="close-docs-button"
+                >
+                  &times;
+                </button>
+              </div>
+              <div className="editor-docs-body">
+                <Shortcuts />
+                <h3>{t('usageTips')}</h3>
+                <p>{t('usageTipsDescription')}</p>
+              </div>
+            </div>
+          </div>
+        )}
+      </LexicalComposer>
+
+      {error && errorMessage && (
+        <div id={errorId} className="editor-error-message" role="alert">
+          {errorMessage}
+        </div>
+      )}
+    </div>
   );
 }

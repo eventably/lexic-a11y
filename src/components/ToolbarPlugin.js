@@ -8,11 +8,12 @@ import {
   KEY_ESCAPE_COMMAND,
   COMMAND_PRIORITY_HIGH,
   FORMAT_TEXT_COMMAND,
+  SELECTION_CHANGE_COMMAND,
 } from 'lexical';
 import { $setBlocksType } from '@lexical/selection';
 import { $createHeadingNode, $isHeadingNode } from '@lexical/rich-text';
 import { TOGGLE_LINK_COMMAND } from '@lexical/link';
-import { 
+import {
   INSERT_ORDERED_LIST_COMMAND,
   INSERT_UNORDERED_LIST_COMMAND,
   REMOVE_LIST_COMMAND,
@@ -21,7 +22,14 @@ import {
 } from '@lexical/list';
 import { useTranslation } from 'react-i18next';
 
-export function ToolbarPlugin({ showDocs, setShowDocs }) {
+function ensureHttpProtocol(url) {
+  if (!url) return url;
+  const trimmed = url.trim();
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
+}
+
+export function ToolbarPlugin({ showDocs, setShowDocs, docsButtonRef }) {
   const [editor] = useLexicalComposerContext();
   const { t } = useTranslation();
   const [showLinkDialog, setShowLinkDialog] = useState(false);
@@ -34,43 +42,39 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
   const [isItalic, setIsItalic] = useState(false);
   const [isUnderline, setIsUnderline] = useState(false);
   const [isStrikethrough, setIsStrikethrough] = useState(false);
+  const [, setIsEditorFocused] = useState(false);
   const dialogRef = useRef(null);
   const urlInputRef = useRef(null);
+  const linkButtonRef = useRef(null);
+  const selectionRef = useRef(null);
 
   // Helper to apply heading formatting with toggle functionality
   const setHeading = useCallback((tag) => {
     editor.update(() => {
       const selection = $getSelection();
       if (!$isRangeSelection(selection)) return;
-      
-      // Check if selection is already the same heading type
+
       let isAlreadyHeadingType = false;
       const anchorNode = selection.anchor.getNode();
       const focusNode = selection.focus.getNode();
-      
-      // Check the nearest block parent of selection
       const anchorParent = anchorNode.getParent();
       const focusParent = focusNode.getParent();
-      
-      // Simple case: heading is direct parent
+
       if (
         ($isHeadingNode(anchorParent) && anchorParent.getTag() === tag) ||
         ($isHeadingNode(focusParent) && focusParent.getTag() === tag)
       ) {
         isAlreadyHeadingType = true;
       }
-      
+
       try {
         if (isAlreadyHeadingType) {
-          // Convert to paragraph if already the heading type
           $setBlocksType(selection, () => $createParagraphNode());
         } else {
-          // Convert to specified heading type
           $setBlocksType(selection, () => $createHeadingNode(tag));
         }
       } catch (error) {
         console.error('Error applying heading:', error);
-        // Fallback implementation
         if (isAlreadyHeadingType) {
           const paragraph = $createParagraphNode();
           selection.insertNodes([paragraph]);
@@ -82,7 +86,62 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
     });
   }, [editor]);
 
-  // Register keyboard shortcuts
+  // Helper to ensure editor focus before executing a toolbar action
+  const handleButtonKeyDown = useCallback((e, action) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      editor.focus();
+      setTimeout(() => {
+        action();
+      }, 0);
+    }
+  }, [editor]);
+
+  // Tab from help button to editor content area
+  const handleToolbarKeyDown = useCallback((e) => {
+    if (e.key === 'Tab' && !e.shiftKey) {
+      const activeElement = document.activeElement;
+      if (activeElement && activeElement.classList.contains('docs-button')) {
+        e.preventDefault();
+        const editorBox = activeElement.closest('.editor-box');
+        if (editorBox) {
+          const contentEditable = editorBox.querySelector('.editor-input');
+          if (contentEditable) {
+            contentEditable.focus();
+          }
+        }
+      }
+    }
+  }, []);
+
+  // Close link dialog and return focus to link button
+  const closeLinkDialog = useCallback(() => {
+    setShowLinkDialog(false);
+    setTimeout(() => {
+      setLinkUrl('');
+      setLinkText('');
+      if (linkButtonRef.current) {
+        linkButtonRef.current.focus();
+      }
+    }, 50);
+  }, []);
+
+  // Handle link button click - store selection before opening dialog
+  const handleLinkButtonClick = useCallback(() => {
+    editor.getEditorState().read(() => {
+      const selection = $getSelection();
+      if ($isRangeSelection(selection)) {
+        selectionRef.current = selection.clone();
+        const selectedText = selection.getTextContent();
+        if (selectedText) {
+          setLinkText(selectedText);
+        }
+      }
+    });
+    setShowLinkDialog(true);
+  }, [editor]);
+
+  // Register keyboard shortcuts (scoped to this editor instance)
   useEffect(() => {
     const handleKeyDown = (e) => {
       const isMac = navigator.platform.toUpperCase().includes('MAC');
@@ -90,27 +149,18 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
 
       if (!mod && e.key !== 'Escape') return;
 
-      // Basic formatting shortcuts
+      // Only fire shortcuts when this editor instance is focused
+      const rootElement = editor.getRootElement();
+      if (!rootElement) return;
+      const editorBox = rootElement.closest('.editor-box');
+      if (!editorBox || !editorBox.contains(document.activeElement)) return;
+
+      // Shortcuts that Lexical doesn't handle natively
       if (mod && !e.altKey) {
         switch (e.key.toLowerCase()) {
-          case 'b':
-            e.preventDefault();
-            editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold');
-            break;
-          case 'i':
-            e.preventDefault();
-            editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'italic');
-            break;
-          case 'u':
-            e.preventDefault();
-            editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'underline');
-            break;
           case 'k': {
             e.preventDefault();
-            const url = window.prompt(t('enterUrl'));
-            if (url !== null) {
-              editor.dispatchCommand(TOGGLE_LINK_COMMAND, url || null);
-            }
+            handleLinkButtonClick();
             break;
           }
           case 'd':
@@ -118,13 +168,13 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
             setShowDocs(prevState => !prevState);
             break;
           case '8':
-            if (e.shiftKey) { // For * (Shift+8)
+            if (e.shiftKey) {
               e.preventDefault();
               editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined);
             }
             break;
           case '7':
-            if (e.shiftKey) { // For & (Shift+7)
+            if (e.shiftKey) {
               e.preventDefault();
               editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined);
             }
@@ -169,7 +219,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [editor, setShowDocs, t, setHeading]);
+  }, [editor, setShowDocs, t, setHeading, handleLinkButtonClick]);
 
   // Register Escape key to close link dialog
   useEffect(() => {
@@ -177,26 +227,40 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
       KEY_ESCAPE_COMMAND,
       () => {
         if (showLinkDialog) {
-          setShowLinkDialog(false);
+          closeLinkDialog();
           return true;
         }
         return false;
       },
       COMMAND_PRIORITY_HIGH
     );
-  }, [editor, showLinkDialog]);
-  
+  }, [editor, showLinkDialog, closeLinkDialog]);
+
+  // Track editor focus state
+  useEffect(() => {
+    const rootElement = editor.getRootElement();
+    if (!rootElement) return;
+
+    const handleFocus = () => setIsEditorFocused(true);
+    const handleBlur = () => setIsEditorFocused(false);
+
+    rootElement.addEventListener('focus', handleFocus);
+    rootElement.addEventListener('blur', handleBlur);
+
+    return () => {
+      rootElement.removeEventListener('focus', handleFocus);
+      rootElement.removeEventListener('blur', handleBlur);
+    };
+  }, [editor]);
+
   // Helper function to toggle list formats
   const toggleList = useCallback((listType) => {
     try {
       if (listType === 'bullet' && isUnorderedListActive) {
-        // Remove the list if it's already active
         editor.dispatchCommand(REMOVE_LIST_COMMAND, undefined);
       } else if (listType === 'number' && isOrderedListActive) {
-        // Remove the list if it's already active
         editor.dispatchCommand(REMOVE_LIST_COMMAND, undefined);
       } else {
-        // Apply the appropriate list type
         if (listType === 'bullet') {
           editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined);
         } else if (listType === 'number') {
@@ -213,12 +277,11 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
     const updateToolbar = () => {
       try {
         const editorState = editor.getEditorState();
-        
+
         editorState.read(() => {
           try {
             const selection = $getSelection();
-            
-            // Reset all format states when there's no valid selection
+
             if (!selection || !$isRangeSelection(selection)) {
               setActiveHeadingTag(null);
               setIsOrderedListActive(false);
@@ -229,77 +292,60 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
               setIsStrikethrough(false);
               return;
             }
-            
-            // Check for text formatting (bold, italic, etc.)
+
             try {
-              // Only check format types when there's actual text content and selection is not collapsed
               const textContent = selection.getTextContent();
               const hasTextAndSelection = textContent && textContent.length > 0 && !selection.isCollapsed();
-              
-              // Default to false when no text is selected
+
               let boldActive = false;
               let italicActive = false;
               let underlineActive = false;
               let strikethroughActive = false;
-              
+
               if (hasTextAndSelection) {
-                // In Lexical, format types are represented by numerical values
-                // We'll use the hasFormat method that's available on the selection
                 boldActive = selection.hasFormat('bold');
                 italicActive = selection.hasFormat('italic');
                 underlineActive = selection.hasFormat('underline');
                 strikethroughActive = selection.hasFormat('strikethrough');
               }
-              
-              // Update state for each format type
+
               setIsBold(boldActive);
               setIsItalic(italicActive);
               setIsUnderline(underlineActive);
               setIsStrikethrough(strikethroughActive);
             } catch (error) {
-              // Reset formatting state on error
               setIsBold(false);
               setIsItalic(false);
               setIsUnderline(false);
               setIsStrikethrough(false);
             }
-            
-            // Check for headings, lists, etc.
+
             let headingTag = null;
             let orderedListActive = false;
             let unorderedListActive = false;
-            
+
             try {
-              // Get the anchor node safely
               const anchorNode = selection.anchor.getNode();
               if (!anchorNode) return;
-              
-              // Helper to check for headings
+
               const findHeadingTag = (node) => {
                 if (!node) return null;
-                
-                // Check if node is a heading
                 if ($isHeadingNode(node)) {
                   return node.getTag();
                 }
-                
-                // Check parent
                 try {
                   const parent = node.getParent();
                   if (parent && $isHeadingNode(parent)) {
                     return parent.getTag();
                   }
                 } catch (e) {
-                  // Ignore errors when getting parent
+                  // Ignore
                 }
-                
                 return null;
               };
-              
-              // Find headings
+
               headingTag = findHeadingTag(anchorNode);
-              
-              // Helper to safely get parent
+
               const getParentSafely = (node) => {
                 if (!node) return null;
                 try {
@@ -308,18 +354,16 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
                   return null;
                 }
               };
-              
-              // Check for lists by traversing up the tree
+
               let current = anchorNode;
               let depth = 0;
               while (current && depth < 10) {
                 if ($isListItemNode(current)) {
-                  // Found a list item, find its parent list
                   let listParent = getParentSafely(current);
                   while (listParent && !$isListNode(listParent)) {
                     listParent = getParentSafely(listParent);
                   }
-                  
+
                   if (listParent && $isListNode(listParent)) {
                     try {
                       const listType = listParent.getListType();
@@ -329,25 +373,23 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
                         orderedListActive = true;
                       }
                     } catch (e) {
-                      // Ignore list type errors
+                      // Ignore
                     }
                   }
                   break;
                 }
-                
+
                 current = getParentSafely(current);
                 depth++;
               }
             } catch (e) {
-              // Silently fail node traversal
+              // Silently fail
             }
-            
-            // Update state with active formats
+
             setActiveHeadingTag(headingTag);
             setIsOrderedListActive(orderedListActive);
             setIsUnorderedListActive(unorderedListActive);
           } catch (e) {
-            // Reset all states if there's an error
             setActiveHeadingTag(null);
             setIsOrderedListActive(false);
             setIsUnorderedListActive(false);
@@ -358,30 +400,25 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
           }
         });
       } catch (error) {
-        // Silently fail the entire update
+        // Silently fail
       }
     };
-    
-    // Run on mount and register a listener
+
     updateToolbar();
-    
-    // Set up two listeners - one for editor changes and one for selection changes
+
     const removeUpdateListener = editor.registerUpdateListener(() => {
-      // Just call updateToolbar - it has its own error handling
       updateToolbar();
     });
-    
-    // Also register for selection changes
+
     const removeSelectionListener = editor.registerCommand(
-      'selection-change',
+      SELECTION_CHANGE_COMMAND,
       () => {
         updateToolbar();
-        return false; // Don't block other handlers
+        return false;
       },
       COMMAND_PRIORITY_HIGH
     );
-    
-    // Clean up both listeners
+
     return () => {
       removeUpdateListener();
       removeSelectionListener();
@@ -391,18 +428,41 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
   // Focus URL input when dialog opens
   useEffect(() => {
     if (showLinkDialog && urlInputRef.current) {
-      // Slight delay to ensure the dialog is fully rendered
       setTimeout(() => {
         urlInputRef.current.focus();
       }, 50);
     }
   }, [showLinkDialog]);
 
+  // Link click handler: open links in new tabs
+  useEffect(() => {
+    const rootElement = editor.getRootElement();
+    if (!rootElement) return;
+
+    const handleClick = (e) => {
+      const link = e.target.closest('a');
+      if (link && link.href) {
+        e.preventDefault();
+        window.open(link.href, '_blank', 'noopener,noreferrer');
+      }
+    };
+
+    rootElement.addEventListener('click', handleClick);
+    return () => rootElement.removeEventListener('click', handleClick);
+  }, [editor]);
+
   return (
-    <div className="editor-toolbar" role="toolbar" aria-label={t('editorToolbar')}>
+    <div
+      className="editor-toolbar"
+      role="toolbar"
+      aria-label={t('editorToolbar')}
+      onKeyDown={handleToolbarKeyDown}
+    >
       <div className="toolbar-group">
-        <button 
-          onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold')} 
+        <button
+          type="button"
+          onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold')}
+          onKeyDown={(e) => handleButtonKeyDown(e, () => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold'))}
           aria-label={t('bold')}
           className={isBold ? 'active' : ''}
           aria-pressed={isBold}
@@ -412,8 +472,10 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
             <path d="M6 12H15C17.2091 12 19 13.7909 19 16C19 18.2091 17.2091 20 15 20H6V12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </button>
-        <button 
-          onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'italic')} 
+        <button
+          type="button"
+          onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'italic')}
+          onKeyDown={(e) => handleButtonKeyDown(e, () => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'italic'))}
           aria-label={t('italic')}
           className={isItalic ? 'active' : ''}
           aria-pressed={isItalic}
@@ -424,8 +486,10 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
             <path d="M14.5 4L9.5 20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </button>
-        <button 
-          onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'underline')} 
+        <button
+          type="button"
+          onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'underline')}
+          onKeyDown={(e) => handleButtonKeyDown(e, () => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'underline'))}
           aria-label={t('underline')}
           className={isUnderline ? 'active' : ''}
           aria-pressed={isUnderline}
@@ -435,8 +499,10 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
             <path d="M4 21H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </button>
-        <button 
-          onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'strikethrough')} 
+        <button
+          type="button"
+          onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'strikethrough')}
+          onKeyDown={(e) => handleButtonKeyDown(e, () => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'strikethrough'))}
           aria-label={t('strikethrough')}
           className={isStrikethrough ? 'active' : ''}
           aria-pressed={isStrikethrough}
@@ -450,49 +516,61 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
       </div>
 
       <div className="toolbar-group">
-        <button 
-          onClick={() => setHeading('h1')} 
-          aria-label={t('heading1')} 
+        <button
+          type="button"
+          onClick={() => setHeading('h1')}
+          onKeyDown={(e) => handleButtonKeyDown(e, () => setHeading('h1'))}
+          aria-label={t('heading1')}
           className={`heading-button ${activeHeadingTag === 'h1' ? 'active' : ''}`}
           aria-pressed={activeHeadingTag === 'h1' ? true : false}
         >
           H1
         </button>
-        <button 
-          onClick={() => setHeading('h2')} 
-          aria-label={t('heading2')} 
+        <button
+          type="button"
+          onClick={() => setHeading('h2')}
+          onKeyDown={(e) => handleButtonKeyDown(e, () => setHeading('h2'))}
+          aria-label={t('heading2')}
           className={`heading-button ${activeHeadingTag === 'h2' ? 'active' : ''}`}
           aria-pressed={activeHeadingTag === 'h2' ? true : false}
         >
           H2
         </button>
-        <button 
-          onClick={() => setHeading('h3')} 
-          aria-label={t('heading3')} 
+        <button
+          type="button"
+          onClick={() => setHeading('h3')}
+          onKeyDown={(e) => handleButtonKeyDown(e, () => setHeading('h3'))}
+          aria-label={t('heading3')}
           className={`heading-button ${activeHeadingTag === 'h3' ? 'active' : ''}`}
           aria-pressed={activeHeadingTag === 'h3' ? true : false}
         >
           H3
         </button>
-        <button 
-          onClick={() => setHeading('h4')} 
-          aria-label={t('heading4')} 
+        <button
+          type="button"
+          onClick={() => setHeading('h4')}
+          onKeyDown={(e) => handleButtonKeyDown(e, () => setHeading('h4'))}
+          aria-label={t('heading4')}
           className={`heading-button ${activeHeadingTag === 'h4' ? 'active' : ''}`}
           aria-pressed={activeHeadingTag === 'h4' ? true : false}
         >
           H4
         </button>
-        <button 
-          onClick={() => setHeading('h5')} 
-          aria-label={t('heading5')} 
+        <button
+          type="button"
+          onClick={() => setHeading('h5')}
+          onKeyDown={(e) => handleButtonKeyDown(e, () => setHeading('h5'))}
+          aria-label={t('heading5')}
           className={`heading-button ${activeHeadingTag === 'h5' ? 'active' : ''}`}
           aria-pressed={activeHeadingTag === 'h5' ? true : false}
         >
           H5
         </button>
-        <button 
-          onClick={() => setHeading('h6')} 
-          aria-label={t('heading6')} 
+        <button
+          type="button"
+          onClick={() => setHeading('h6')}
+          onKeyDown={(e) => handleButtonKeyDown(e, () => setHeading('h6'))}
+          aria-label={t('heading6')}
           className={`heading-button ${activeHeadingTag === 'h6' ? 'active' : ''}`}
           aria-pressed={activeHeadingTag === 'h6' ? true : false}
         >
@@ -502,20 +580,11 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
 
       <div className="toolbar-group">
         <button
+          type="button"
+          ref={linkButtonRef}
           className="link-button"
-          onClick={() => {
-            // Get any selected text before opening dialog
-            editor.getEditorState().read(() => {
-              const selection = $getSelection();
-              if ($isRangeSelection(selection)) {
-                const selectedText = selection.getTextContent();
-                if (selectedText) {
-                  setLinkText(selectedText);
-                }
-              }
-            });
-            setShowLinkDialog(true);
-          }}
+          onClick={handleLinkButtonClick}
+          onKeyDown={(e) => handleButtonKeyDown(e, handleLinkButtonClick)}
           aria-label={t('link')}
         >
           <svg className="icon-link" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -528,8 +597,10 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
       </div>
 
       <div className="toolbar-group">
-        <button 
-          onClick={() => toggleList('bullet')} 
+        <button
+          type="button"
+          onClick={() => toggleList('bullet')}
+          onKeyDown={(e) => handleButtonKeyDown(e, () => toggleList('bullet'))}
           aria-label={t('bulletList')}
           className={isUnorderedListActive ? 'active' : ''}
           aria-pressed={isUnorderedListActive ? true : false}
@@ -543,8 +614,10 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
             <line x1="9" y1="18" x2="20" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
           </svg>
         </button>
-        <button 
-          onClick={() => toggleList('number')} 
+        <button
+          type="button"
+          onClick={() => toggleList('number')}
+          onKeyDown={(e) => handleButtonKeyDown(e, () => toggleList('number'))}
           aria-label={t('numberedList')}
           className={isOrderedListActive ? 'active' : ''}
           aria-pressed={isOrderedListActive ? true : false}
@@ -561,8 +634,10 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
       </div>
 
       <div className="toolbar-group toolbar-right">
-        <button 
-          onClick={() => setShowDocs(prevState => !prevState)} 
+        <button
+          type="button"
+          ref={docsButtonRef}
+          onClick={() => setShowDocs(prevState => !prevState)}
           aria-label={t('showHelp')}
           aria-pressed={showDocs}
           className={`docs-button ${showDocs ? 'active' : ''}`}
@@ -576,31 +651,35 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
       </div>
 
       {showLinkDialog && (
-        <div 
+        <div
           className="link-dialog-overlay"
-          onClick={() => setShowLinkDialog(false)}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              closeLinkDialog();
+            }
+          }}
           onKeyDown={(e) => {
             if (e.key === 'Escape') {
-              setShowLinkDialog(false);
+              closeLinkDialog();
             }
           }}
           role="presentation"
         >
-          <div 
+          <div
             ref={dialogRef}
-            className="link-dialog" 
+            className="link-dialog"
             role="dialog"
             aria-modal="true"
             aria-labelledby="link-dialog-title"
             tabIndex={-1}
           >
-            <h3 id="link-dialog-title">{t('insertLink')}</h3>
+            <h2 id="link-dialog-title">{t('insertLink')}</h2>
             <div className="link-dialog-form">
               <div className="form-group">
                 <label htmlFor="link-url">{t('url')}:</label>
-                <input 
+                <input
                   ref={urlInputRef}
-                  type="text" 
+                  type="text"
                   id="link-url"
                   value={linkUrl}
                   onChange={(e) => setLinkUrl(e.target.value)}
@@ -611,8 +690,8 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
 
               <div className="form-group">
                 <label htmlFor="link-text">{t('text')}:</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   id="link-text"
                   value={linkText}
                   onChange={(e) => setLinkText(e.target.value)}
@@ -621,50 +700,42 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
               </div>
 
               <div className="link-dialog-buttons">
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   className="cancel-button"
-                  onClick={() => {
-                    setShowLinkDialog(false);
-                    setTimeout(() => {
-                      setLinkUrl('');
-                      setLinkText('');
-                    }, 50);
-                  }}
+                  onClick={closeLinkDialog}
                 >
                   {t('cancel')}
                 </button>
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   className="insert-button"
                   onClick={() => {
-                    if (linkUrl) {
-                      // Close dialog first to prevent editor focus issues
+                    const finalUrl = ensureHttpProtocol(linkUrl);
+                    if (finalUrl) {
                       setShowLinkDialog(false);
-                      
-                      // Small delay to ensure the dialog is fully closed
+
                       setTimeout(() => {
                         editor.focus();
                         editor.update(() => {
                           const selection = $getSelection();
                           if ($isRangeSelection(selection)) {
                             if (linkText && selection.isCollapsed()) {
-                              // If there's link text but no selection, insert the text with the link
                               selection.insertText(linkText);
-                              // Need to get selection again after text insertion
                               const updatedSelection = $getSelection();
                               if ($isRangeSelection(updatedSelection)) {
                                 updatedSelection.modify('backward', linkText.length, 'character');
                                 editor.dispatchCommand(TOGGLE_LINK_COMMAND, {
-                                  url: linkUrl,
+                                  url: finalUrl,
                                   target: '_blank',
+                                  rel: 'noopener noreferrer',
                                 });
                               }
                             } else {
-                              // Apply link to the current selection
                               editor.dispatchCommand(TOGGLE_LINK_COMMAND, {
-                                url: linkUrl,
+                                url: finalUrl,
                                 target: '_blank',
+                                rel: 'noopener noreferrer',
                               });
                             }
                           }
@@ -673,12 +744,9 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
                         setLinkText('');
                       }, 50);
                     } else {
-                      setShowLinkDialog(false);
-                      setLinkUrl('');
-                      setLinkText('');
+                      closeLinkDialog();
                     }
                   }}
-                  disabled={!linkUrl}
                 >
                   {t('insert')}
                 </button>

@@ -7,7 +7,16 @@ import i18n from '../utils/i18n';
 
 // Mock the Lexical components and plugins
 jest.mock('@lexical/react/LexicalComposerContext', () => ({
-  useLexicalComposerContext: jest.fn(() => [{ update: jest.fn() }]),
+  useLexicalComposerContext: jest.fn(() => [{
+    update: jest.fn(),
+    focus: jest.fn(),
+    getRootElement: jest.fn(() => null),
+    getEditorState: jest.fn().mockReturnValue({
+      read: jest.fn(cb => cb())
+    }),
+    registerCommand: jest.fn(() => () => {}),
+    registerUpdateListener: jest.fn(() => () => {}),
+  }]),
 }));
 
 jest.mock('@lexical/react/LexicalComposer', () => ({
@@ -24,7 +33,7 @@ jest.mock('@lexical/react/LexicalRichTextPlugin', () => ({
 }));
 
 jest.mock('@lexical/react/LexicalContentEditable', () => ({
-  ContentEditable: () => <div data-testid="content-editable" />,
+  ContentEditable: (props) => <div data-testid="content-editable" {...props} />,
 }));
 
 jest.mock('@lexical/react/LexicalHistoryPlugin', () => ({
@@ -44,12 +53,48 @@ jest.mock('@lexical/react/LexicalLinkPlugin', () => ({
   LinkPlugin: () => <div data-testid="link-plugin" />,
 }));
 
+jest.mock('@lexical/react/LexicalListPlugin', () => ({
+  ListPlugin: () => <div data-testid="list-plugin" />,
+}));
+
 jest.mock('@lexical/html', () => ({
   $generateHtmlFromNodes: () => '<p>Test HTML Output</p>',
 }));
 
-jest.mock('../components/ToolbarPlugin', () => ({
-  ToolbarPlugin: () => <div data-testid="toolbar-plugin" />,
+jest.mock('lexical', () => ({
+  $getSelection: jest.fn(() => null),
+  $isRangeSelection: jest.fn(() => false),
+  $createParagraphNode: jest.fn(),
+  KEY_ESCAPE_COMMAND: 'escape',
+  COMMAND_PRIORITY_HIGH: 1,
+  FORMAT_TEXT_COMMAND: 'format-text',
+  SELECTION_CHANGE_COMMAND: 'selection-change',
+}));
+
+jest.mock('@lexical/selection', () => ({
+  $setBlocksType: jest.fn(),
+}));
+
+jest.mock('@lexical/rich-text', () => ({
+  HeadingNode: {},
+  QuoteNode: {},
+  $createHeadingNode: jest.fn(() => ({})),
+  $isHeadingNode: jest.fn(() => false),
+}));
+
+jest.mock('@lexical/link', () => ({
+  LinkNode: {},
+  TOGGLE_LINK_COMMAND: 'toggle-link',
+}));
+
+jest.mock('@lexical/list', () => ({
+  ListNode: {},
+  ListItemNode: {},
+  INSERT_ORDERED_LIST_COMMAND: 'insert-ordered-list',
+  INSERT_UNORDERED_LIST_COMMAND: 'insert-unordered-list',
+  REMOVE_LIST_COMMAND: 'remove-list',
+  $isListNode: jest.fn(() => false),
+  $isListItemNode: jest.fn(() => false),
 }));
 
 const renderWithI18n = (component) => {
@@ -60,63 +105,140 @@ describe('Editor Component', () => {
   it('renders without crashing', () => {
     const mockOnContentChange = jest.fn();
     renderWithI18n(<Editor onContentChange={mockOnContentChange} />);
-    
-    expect(screen.getByRole('tablist')).toBeInTheDocument();
-    expect(screen.getByText('Edit')).toBeInTheDocument();
-    expect(screen.getByText('Preview')).toBeInTheDocument();
-    expect(screen.getByText('Docs')).toBeInTheDocument();
+
+    expect(screen.getByTestId('lexical-composer')).toBeInTheDocument();
+    expect(screen.getByRole('toolbar')).toBeInTheDocument();
+    expect(screen.getByTestId('content-editable')).toBeInTheDocument();
   });
 
-  it('starts with the edit tab active', () => {
+  it('renders with editor-box wrapper with role group', () => {
     const mockOnContentChange = jest.fn();
     renderWithI18n(<Editor onContentChange={mockOnContentChange} />);
-    
-    const editTab = screen.getByText('Edit');
-    expect(editTab).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByTestId('toolbar-plugin')).toBeInTheDocument();
+
+    const group = screen.getByRole('group');
+    expect(group).toBeInTheDocument();
+    expect(group).toHaveClass('editor-box');
   });
 
-  it('switches to preview tab when clicked', async () => {
+  it('renders a label when label prop is provided', () => {
+    const mockOnContentChange = jest.fn();
+    renderWithI18n(<Editor onContentChange={mockOnContentChange} label="Description" />);
+
+    expect(screen.getByText('Description')).toBeInTheDocument();
+    expect(screen.getByText('Description')).toHaveClass('editor-label');
+  });
+
+  it('renders required indicator when required prop is true', () => {
+    const mockOnContentChange = jest.fn();
+    renderWithI18n(<Editor onContentChange={mockOnContentChange} label="Description" required={true} />);
+
+    expect(screen.getByText('*')).toBeInTheDocument();
+    expect(screen.getByText('*')).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('renders error message when error and errorMessage props are provided', () => {
+    const mockOnContentChange = jest.fn();
+    renderWithI18n(
+      <Editor
+        onContentChange={mockOnContentChange}
+        label="Description"
+        error={true}
+        errorMessage="This field is required"
+      />
+    );
+
+    const errorEl = screen.getByRole('alert');
+    expect(errorEl).toBeInTheDocument();
+    expect(errorEl).toHaveTextContent('This field is required');
+    expect(errorEl).toHaveClass('editor-error-message');
+  });
+
+  it('applies error styling when error prop is true', () => {
+    const mockOnContentChange = jest.fn();
+    renderWithI18n(
+      <Editor
+        onContentChange={mockOnContentChange}
+        error={true}
+        errorMessage="Error"
+        label="Test"
+      />
+    );
+
+    const group = screen.getByRole('group');
+    expect(group).toHaveClass('editor-box-error');
+    expect(screen.getByText('Test')).toHaveClass('editor-label-error');
+  });
+
+  it('does not render error message when error is false', () => {
+    const mockOnContentChange = jest.fn();
+    renderWithI18n(
+      <Editor
+        onContentChange={mockOnContentChange}
+        error={false}
+        errorMessage="This field is required"
+      />
+    );
+
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('renders visually hidden description for screen readers', () => {
+    const mockOnContentChange = jest.fn();
+    renderWithI18n(<Editor onContentChange={mockOnContentChange} />);
+
+    const description = document.querySelector('.sr-only');
+    expect(description).toBeInTheDocument();
+    expect(description.textContent).toContain('Use Tab to reach the toolbar');
+  });
+
+  it('shows docs overlay when help button is clicked', async () => {
     const user = userEvent.setup();
     const mockOnContentChange = jest.fn();
     renderWithI18n(<Editor onContentChange={mockOnContentChange} />);
-    
-    const previewTab = screen.getByText('Preview');
-    await user.click(previewTab);
-    
-    expect(previewTab).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByLabelText('Preview mode')).toBeInTheDocument();
-  });
 
-  it('switches to docs tab when clicked', async () => {
-    const user = userEvent.setup();
-    const mockOnContentChange = jest.fn();
-    renderWithI18n(<Editor onContentChange={mockOnContentChange} />);
-    
-    const docsTab = screen.getByText('Docs');
-    await user.click(docsTab);
-    
-    expect(docsTab).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByLabelText('Editor documentation')).toBeInTheDocument();
+    const helpButton = screen.getByLabelText('Show keyboard shortcuts help');
+    await user.click(helpButton);
+
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toBeInTheDocument();
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
     expect(screen.getByText('Editor Shortcuts')).toBeInTheDocument();
   });
-  
-  it('displays editor documentation in the docs tab', async () => {
+
+  it('renders Shortcuts component in docs overlay', async () => {
     const user = userEvent.setup();
     const mockOnContentChange = jest.fn();
     renderWithI18n(<Editor onContentChange={mockOnContentChange} />);
-    
-    // Switch to docs tab
-    const docsTab = screen.getByText('Docs');
-    await user.click(docsTab);
-    
-    // Verify documentation is displayed
-    const docSection = screen.getByLabelText('Editor documentation');
-    expect(docSection).toBeInTheDocument();
-    expect(screen.getByText('Editor Shortcuts')).toBeInTheDocument();
-    
-    // Check for documentation header and usage tips
+
+    const helpButton = screen.getByLabelText('Show keyboard shortcuts help');
+    await user.click(helpButton);
+
     expect(screen.getByText('Usage Tips')).toBeInTheDocument();
-    expect(screen.getByText(/Use the toolbar buttons or keyboard shortcuts/)).toBeInTheDocument();
+    // Check that kbd elements are rendered (from Shortcuts component)
+    const kbdElements = document.querySelectorAll('kbd');
+    expect(kbdElements.length).toBeGreaterThan(0);
+  });
+
+  it('closes docs overlay when close button is clicked', async () => {
+    const user = userEvent.setup();
+    const mockOnContentChange = jest.fn();
+    renderWithI18n(<Editor onContentChange={mockOnContentChange} />);
+
+    // Open docs
+    const helpButton = screen.getByLabelText('Show keyboard shortcuts help');
+    await user.click(helpButton);
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+
+    // Close docs
+    const closeButton = screen.getByLabelText('Close documentation');
+    await user.click(closeButton);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('does not render label when label prop is not provided', () => {
+    const mockOnContentChange = jest.fn();
+    renderWithI18n(<Editor onContentChange={mockOnContentChange} />);
+
+    expect(document.querySelector('.editor-label')).not.toBeInTheDocument();
   });
 });

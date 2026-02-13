@@ -1,26 +1,100 @@
 /* Editor.css */
 /* Basic editor styles including Lexical theme classes */
 :root {
-  --primary-color: #4361ee;
-  --primary-light: #e8efff;
-  --primary-dark: #2947c3;
+  --primary-color: #805394;
+  --primary-light: #f3e8f9;
+  --primary-dark: #482856;
   --secondary-color: #4cc9f0;
   --text-color: #333;
   --text-light: #757575;
   --background: #ffffff;
-  --border-color: #e0e0e0;
-  --focus-color: #4361ee;
-  --error-color: #ef476f;
+  --border-color: #5f5d5d;
+  --focus-color: #805394;
+  --error-color: #d32f2f;
   --success-color: #06d6a0;
+  --dark-blue: #482856;
   --transition: all 0.2s ease-in-out;
   --box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
 }
 
+/* Screen reader only utility */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Editor box wrapper */
+.editor-box {
+  border: 2px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--background);
+  transition: border-color 0.2s ease-in-out;
+}
+
+.editor-box:hover {
+  border-color: var(--primary-color);
+}
+
+.editor-box:focus-within {
+  border-color: var(--primary-color);
+  outline: 3px solid var(--focus-color);
+  outline-offset: 2px;
+}
+
+.editor-box-error {
+  border-color: var(--error-color);
+}
+
+.editor-box-error:hover {
+  border-color: var(--error-color);
+}
+
+.editor-box-error:focus-within {
+  border-color: var(--error-color);
+  outline-color: var(--error-color);
+}
+
+/* Label styles */
+.editor-label-container {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.editor-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-color);
+  cursor: pointer;
+}
+
+.editor-label-error {
+  color: var(--error-color);
+}
+
+.editor-required-indicator {
+  color: var(--error-color);
+  font-weight: 600;
+}
+
+/* Error message */
+.editor-error-message {
+  color: var(--error-color);
+  font-size: 12px;
+  margin-top: 4px;
+  font-weight: 500;
+}
 
 .editor-container {
-  border: 1px solid var(--border-color);
   padding: 16px;
-  box-shadow: var(--box-shadow);
   background-color: var(--background);
 }
 
@@ -82,6 +156,12 @@
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
+/* Link hover styles in editor content */
+.editor-container a:hover {
+  color: var(--primary-dark);
+  text-decoration: underline;
+}
+
 .editor-docs-overlay {
   position: fixed;
   top: 0;
@@ -113,7 +193,7 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1rem;
-  border-bottom: 1px solid rgba(67, 97, 238, 0.2);
+  border-bottom: 1px solid rgba(128, 83, 148, 0.2);
   padding-bottom: 8px;
 }
 
@@ -138,6 +218,11 @@
 
 .close-docs-button:hover {
   color: var(--primary-color);
+}
+
+.close-docs-button:focus {
+  outline: 3px solid var(--focus-color);
+  outline-offset: 2px;
 }
 
 .editor-docs-body h3 {
@@ -169,14 +254,39 @@ kbd {
   margin: 0 2px;
 }
 
+/* Shortcut component styles */
+.shortcut-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 0.5em;
+}
+
+.shortcut-keys {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  white-space: nowrap;
+}
+
+.key-separator {
+  color: var(--text-light);
+  font-size: 0.85em;
+  margin: 0 1px;
+}
+
+.shortcut-description {
+  color: var(--text-color);
+  font-size: 0.9em;
+}
+
 .editor-toolbar {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
   padding: 5px;
   background-color: #f8f9fa;
-  border: 1px solid var(--border-color);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .toolbar-group {
@@ -227,12 +337,10 @@ kbd {
   background-color: var(--primary-light);
   border-color: var(--primary-color);
   color: var(--primary-color);
-  transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
 }
 
 .editor-toolbar button:active {
-  transform: translateY(0);
   box-shadow: none;
 }
 
@@ -253,8 +361,8 @@ kbd {
 }
 
 .editor-toolbar button:focus {
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(67, 97, 238, 0.3);
+  outline: 3px solid var(--focus-color);
+  outline-offset: 2px;
 }
 
 /* Button styling */
@@ -316,7 +424,7 @@ kbd {
   cursor: default;
 }
 
-.link-dialog h3 {
+.link-dialog h2 {
   margin-top: 0;
   margin-bottom: 15px;
   color: var(--text-color);
@@ -349,9 +457,9 @@ kbd {
 }
 
 .form-group input:focus {
-  outline: none;
+  outline: 3px solid var(--focus-color);
+  outline-offset: 2px;
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px rgba(67, 97, 238, 0.2);
 }
 
 .link-dialog-buttons {
@@ -379,6 +487,11 @@ kbd {
   background-color: #e1e1e1;
 }
 
+.cancel-button:focus {
+  outline: 3px solid var(--focus-color);
+  outline-offset: 2px;
+}
+
 .insert-button {
   background-color: var(--primary-color);
   border: 1px solid var(--primary-color);
@@ -389,10 +502,9 @@ kbd {
   background-color: var(--primary-dark);
 }
 
-.insert-button:disabled {
-  background-color: #b3c1f7;
-  border-color: #b3c1f7;
-  cursor: not-allowed;
+.insert-button:focus {
+  outline: 3px solid var(--focus-color);
+  outline-offset: 2px;
 }
 
 /* Example styling */

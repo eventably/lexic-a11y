@@ -14,6 +14,7 @@ root.render(
 // Also export the components for library usage
 import Editor from './components/Editor';
 import { ToolbarPlugin } from './components/ToolbarPlugin';
+import { Shortcuts } from './components/Shortcuts';
 import i18n from './utils/i18n';
 
-export { Editor as default, ToolbarPlugin, i18n };
+export { Editor as default, ToolbarPlugin, Shortcuts, i18n };
