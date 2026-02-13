@@ -21,6 +21,10 @@ module.exports = {
   plugins: ['react', 'jsx-a11y'],
   rules: {
     'react/prop-types': 0,
+    // Security
+    'no-eval': 'error',
+    'no-implied-eval': 'error',
+    'no-new-func': 'error',
   },
   settings: {
     react: {
