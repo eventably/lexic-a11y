@@ -64,7 +64,6 @@ const editorConfig = {
   ],
 };
 
-
 export default function Editor({ onContentChange }) {
   const [showDocs, setShowDocs] = useState(false);
   const [, setHtmlOutput] = useState('');
@@ -72,7 +71,7 @@ export default function Editor({ onContentChange }) {
   return (
     <LexicalComposer initialConfig={editorConfig}>
       <ToolbarPlugin showDocs={showDocs} setShowDocs={setShowDocs} />
-      
+
       <div className="editor-container">
         <div className="editor-content-area">
           <RichTextPlugin
@@ -88,13 +87,13 @@ export default function Editor({ onContentChange }) {
               editorState.read(() => {
                 // Generate HTML with default export (no custom transformer)
                 const htmlString = $generateHtmlFromNodes(editor);
-                
+
                 // Use a simple regex to clean up the utility classes
                 const cleanHtml = htmlString
                   .replace(/class="[^"]*"/g, '') // Remove all class attributes
                   .replace(/<(h[1-6]|p|ul|ol|li)([^>]*)>/g, '<$1>') // Clean heading, paragraph, and list tags
                   .replace(/<a([^>]*)(class="[^"]*")([^>]*)>/g, '<a$1$3>'); // Clean link tags
-                
+
                 setHtmlOutput(cleanHtml);
                 onContentChange(cleanHtml);
               });
@@ -102,13 +101,13 @@ export default function Editor({ onContentChange }) {
           />
         </div>
       </div>
-      
+
       {showDocs && (
         <div className="editor-docs-overlay" aria-label="Editor documentation">
           <div className="editor-docs-content">
             <div className="editor-docs-header">
               <h2>Editor Shortcuts</h2>
-              <button 
+              <button
                 onClick={() => setShowDocs(false)}
                 aria-label="Close documentation"
                 className="close-docs-button"
@@ -159,9 +158,7 @@ export default function Editor({ onContentChange }) {
                 </li>
               </ul>
               <h3>Usage Tips</h3>
-              <p>
-                Use the toolbar buttons or keyboard shortcuts to format your content.
-              </p>
+              <p>Use the toolbar buttons or keyboard shortcuts to format your content.</p>
             </div>
           </div>
         </div>

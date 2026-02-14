@@ -46,7 +46,7 @@ try {
   const reactProcess = spawn('npx', ['react-scripts', 'start'], {
     env: { ...process.env, PORT: 4000, BROWSER: 'none' },
     stdio: 'inherit',
-    shell: true
+    shell: true,
   });
 
   // Open browser after delay
@@ -72,7 +72,6 @@ try {
     reactProcess.kill();
     process.exit(0);
   });
-
 } catch (error) {
   console.error('Error starting development server:', error);
   process.exit(1);

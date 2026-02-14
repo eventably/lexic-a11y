@@ -33,6 +33,6 @@ document.addEventListener('DOMContentLoaded', () => {
       </React.StrictMode>
     );
   } else {
-    console.error("Container element #example-root not found!");
+    console.error('Container element #example-root not found!');
   }
 });

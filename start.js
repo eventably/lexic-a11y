@@ -24,7 +24,7 @@ const port = 4000;
 const reactApp = spawn('npx', ['react-scripts', 'start'], {
   env: { ...process.env, PORT: port, BROWSER: 'none' },
   stdio: 'inherit',
-  shell: true
+  shell: true,
 });
 
 console.log(`React app starting on port ${port}...`);

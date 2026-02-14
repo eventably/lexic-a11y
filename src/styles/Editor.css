@@ -1,4 +1,5 @@
 /* Editor.css */
+
 /* Basic editor styles including Lexical theme classes */
 :root {
   --primary-color: #4361ee;
@@ -7,15 +8,14 @@
   --secondary-color: #4cc9f0;
   --text-color: #333;
   --text-light: #757575;
-  --background: #ffffff;
+  --background: #fff;
   --border-color: #e0e0e0;
   --focus-color: #4361ee;
   --error-color: #ef476f;
   --success-color: #06d6a0;
   --transition: all 0.2s ease-in-out;
-  --box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+  --box-shadow: 0 2px 5px rgb(0 0 0 / 8%);
 }
-
 
 .editor-container {
   border: 1px solid var(--border-color);
@@ -29,7 +29,7 @@
   background-color: var(--background);
   min-height: 250px;
   position: relative;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: inset 0 1px 3px rgb(0 0 0 / 5%);
 }
 
 .editor-input {
@@ -37,7 +37,10 @@
   outline: none;
   line-height: 1.6;
   color: var(--text-color);
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
   padding: 16px;
   font-size: 16px;
 }
@@ -79,16 +82,13 @@
   min-height: 200px;
   line-height: 1.6;
   color: var(--text-color);
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: inset 0 1px 3px rgb(0 0 0 / 5%);
 }
 
 .editor-docs-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  inset: 0;
+  background-color: rgb(0 0 0 / 50%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -102,7 +102,7 @@
   max-width: 90%;
   max-height: 80vh;
   overflow-y: auto;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 15px rgb(0 0 0 / 10%);
   border-radius: 4px;
   color: var(--text-color);
   font-family: system-ui, sans-serif;
@@ -113,7 +113,7 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1rem;
-  border-bottom: 1px solid rgba(67, 97, 238, 0.2);
+  border-bottom: 1px solid rgb(67 97 238 / 20%);
   padding-bottom: 8px;
 }
 
@@ -164,8 +164,8 @@ kbd {
   border: 1px solid var(--border-color);
   font-size: 0.85em;
   background: var(--background);
-  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  box-shadow: 0 1px 1px rgb(0 0 0 / 10%);
+  font-family: SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
   margin: 0 2px;
 }
 
@@ -176,7 +176,7 @@ kbd {
   padding: 5px;
   background-color: #f8f9fa;
   border: 1px solid var(--border-color);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 5%);
 }
 
 .toolbar-group {
@@ -228,7 +228,7 @@ kbd {
   border-color: var(--primary-color);
   color: var(--primary-color);
   transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 4px rgb(0 0 0 / 8%);
 }
 
 .editor-toolbar button:active {
@@ -238,7 +238,7 @@ kbd {
 
 /* Universal active state for all toolbar buttons */
 .editor-toolbar button.active,
-.editor-toolbar button[aria-pressed="true"] {
+.editor-toolbar button[aria-pressed='true'] {
   background-color: var(--primary-light);
   border-color: var(--primary-color);
   color: var(--primary-dark);
@@ -247,14 +247,14 @@ kbd {
 }
 
 /* Ensure all buttons have the same active state styling */
-.editor-toolbar button[aria-pressed="true"] svg,
+.editor-toolbar button[aria-pressed='true'] svg,
 .editor-toolbar button.active svg {
   color: var(--primary-dark);
 }
 
 .editor-toolbar button:focus {
   outline: none;
-  box-shadow: 0 0 0 2px rgba(67, 97, 238, 0.3);
+  box-shadow: 0 0 0 2px rgb(67 97 238 / 30%);
 }
 
 /* Button styling */
@@ -266,7 +266,11 @@ kbd {
   gap: 6px;
 }
 
-.icon-link, .icon-bold, .icon-italic, .icon-underline, .icon-strikethrough {
+.icon-link,
+.icon-bold,
+.icon-italic,
+.icon-underline,
+.icon-strikethrough {
   color: var(--primary-color);
 }
 
@@ -280,27 +284,41 @@ kbd {
   font-size: 13px;
 }
 
-.heading-button:nth-child(1) { font-size: 16px; }
-.heading-button:nth-child(2) { font-size: 15px; }
-.heading-button:nth-child(3) { font-size: 14px; }
-.heading-button:nth-child(4) { font-size: 13px; }
-.heading-button:nth-child(5) { font-size: 12px; }
-.heading-button:nth-child(6) { font-size: 11px; }
+.heading-button:nth-child(1) {
+  font-size: 16px;
+}
+
+.heading-button:nth-child(2) {
+  font-size: 15px;
+}
+
+.heading-button:nth-child(3) {
+  font-size: 14px;
+}
+
+.heading-button:nth-child(4) {
+  font-size: 13px;
+}
+
+.heading-button:nth-child(5) {
+  font-size: 12px;
+}
+
+.heading-button:nth-child(6) {
+  font-size: 11px;
+}
 
 /* Preserve font size for active heading buttons */
 .heading-button.active,
-.heading-button[aria-pressed="true"] {
+.heading-button[aria-pressed='true'] {
   font-size: inherit;
 }
 
 /* Link Dialog Styles */
 .link-dialog-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  inset: 0;
+  background-color: rgb(0 0 0 / 50%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -312,7 +330,7 @@ kbd {
   padding: 20px;
   width: 400px;
   max-width: 90%;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 15px rgb(0 0 0 / 10%);
   cursor: default;
 }
 
@@ -351,7 +369,7 @@ kbd {
 .form-group input:focus {
   outline: none;
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px rgba(67, 97, 238, 0.2);
+  box-shadow: 0 0 0 2px rgb(67 97 238 / 20%);
 }
 
 .link-dialog-buttons {
@@ -361,7 +379,8 @@ kbd {
   margin-top: 10px;
 }
 
-.cancel-button, .insert-button {
+.cancel-button,
+.insert-button {
   padding: 8px 16px;
   font-size: 14px;
   font-weight: 500;
@@ -400,7 +419,18 @@ kbd {
   max-width: 900px;
   margin: 0 auto;
   padding: 30px;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    Oxygen,
+    Ubuntu,
+    Cantarell,
+    'Open Sans',
+    'Helvetica Neue',
+    sans-serif;
 }
 
 .output-container {
@@ -414,7 +444,7 @@ kbd {
   padding: 16px;
   overflow: auto;
   max-height: 250px;
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-family: SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
   font-size: 14px;
   border: 1px solid var(--border-color);
   line-height: 1.5;

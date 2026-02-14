@@ -92,11 +92,11 @@
     "stylelint-config-standard": "^40.0.0"
   },
   "lint-staged": {
-    "*.{js,jsx}": [
+    "src/**/*.{js,jsx}": [
       "eslint --fix",
       "prettier --write"
     ],
-    "*.css": [
+    "src/**/*.css": [
       "stylelint --fix",
       "prettier --write"
     ],
