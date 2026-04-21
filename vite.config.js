@@ -12,7 +12,7 @@ export default defineConfig({
   },
   esbuild: {
     loader: 'jsx',
-    include: /src\/.*\.jsx?$/,
+    include: /(src|examples)\/.*\.jsx?$/,
     exclude: [],
   },
   optimizeDeps: {
