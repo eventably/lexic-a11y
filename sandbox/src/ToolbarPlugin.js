@@ -41,7 +41,7 @@ export default function ToolbarPlugin() {
     editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined);
   };
 
-  const formatHeading = (headingSize) => {
+  const formatHeading = headingSize => {
     editor.update(() => {
       const selection = $getSelection();
       if ($isRangeSelection(selection)) {
@@ -75,22 +75,34 @@ export default function ToolbarPlugin() {
           <s>S</s>
         </button>
       </div>
-      
+
       <div className="toolbar-group">
-        <button onClick={() => formatHeading(1)} className="heading-button" aria-label={t('heading1')}>
+        <button
+          onClick={() => formatHeading(1)}
+          className="heading-button"
+          aria-label={t('heading1')}
+        >
           {t('heading1')}
         </button>
-        <button onClick={() => formatHeading(2)} className="heading-button" aria-label={t('heading2')}>
+        <button
+          onClick={() => formatHeading(2)}
+          className="heading-button"
+          aria-label={t('heading2')}
+        >
           {t('heading2')}
         </button>
-        <button onClick={() => formatHeading(3)} className="heading-button" aria-label={t('heading3')}>
+        <button
+          onClick={() => formatHeading(3)}
+          className="heading-button"
+          aria-label={t('heading3')}
+        >
           {t('heading3')}
         </button>
         <button onClick={formatParagraph} className="heading-button" aria-label="Paragraph">
           P
         </button>
       </div>
-      
+
       <div className="toolbar-group">
         <button onClick={insertOrderedList} aria-label={t('orderedList')}>
           1.

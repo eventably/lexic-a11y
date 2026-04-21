@@ -8,46 +8,46 @@ lexic-a11y is a self-contained, React-based editor that emphasizes accessibility
 
 ## What It Does
 
-* Rich Text Editing: Offers essential text formatting including bold, italic, underline, strikethrough, and a full range of headings (H1–H6).
-* List Support: Create and manage ordered and unordered lists with proper semantic structure.
-* Link Management: Insert and edit hyperlinks with an accessible dialog interface.
-* Keyboard Shortcuts: Implements a variety of keyboard shortcuts for quick formatting actions (e.g., Ctrl/Cmd+B for bold, Ctrl/Cmd+Alt+1 for Heading 1) and efficient navigation.
-* Documentation: Provides an overlay with available keyboard shortcuts and usage tips.
-* Internationalization (i18n): Integrated with react-i18next to allow localization of toolbar labels and prompts, making it adaptable for multi-language projects.
-* Accessibility: Designed with accessibility in mind, including ARIA roles, keyboard navigability, and semantic output to ensure compliance with WCAG standards.
+- Rich Text Editing: Offers essential text formatting including bold, italic, underline, strikethrough, and a full range of headings (H1–H6).
+- List Support: Create and manage ordered and unordered lists with proper semantic structure.
+- Link Management: Insert and edit hyperlinks with an accessible dialog interface.
+- Keyboard Shortcuts: Implements a variety of keyboard shortcuts for quick formatting actions (e.g., Ctrl/Cmd+B for bold, Ctrl/Cmd+Alt+1 for Heading 1) and efficient navigation.
+- Documentation: Provides an overlay with available keyboard shortcuts and usage tips.
+- Internationalization (i18n): Integrated with react-i18next to allow localization of toolbar labels and prompts, making it adaptable for multi-language projects.
+- Accessibility: Designed with accessibility in mind, including ARIA roles, keyboard navigability, and semantic output to ensure compliance with WCAG standards.
 
 ## Features
 
-* Core Formatting Options:
-  * Text Styling: Bold, Italic, Underline, Strikethrough.
-  * Headings: H1 through H6 with both toolbar buttons and keyboard shortcuts.
-* List Formatting:
-  * Ordered Lists: Create numbered lists with proper semantic structure.
-  * Unordered Lists: Create bullet lists with proper semantic structure.
-* Content Elements:
-  * Links: Insert and edit hyperlinks with an accessible dialog.
-* Keyboard Shortcuts:
-  * Basic formatting: Ctrl/Cmd+B for bold, Ctrl/Cmd+I for italic, Ctrl/Cmd+U for underline.
-  * Heading shortcuts: Ctrl/Cmd+Alt+[1–6] for H1–H6.
-  * List shortcuts: Ctrl/Cmd+Shift+7 for ordered lists, Ctrl/Cmd+Shift+8 for unordered lists.
-  * Link shortcut: Ctrl/Cmd+K to insert or edit links.
-* Documentation:
-  * Keyboard Shortcuts Help: Overlay displaying all available keyboard commands.
-* Internationalization (i18n):
-  * Built-in support using react-i18next.
-  * Easy to add new languages and localize toolbar and prompt texts.
-* Accessibility (WCAG Compliant):
-  * ARIA roles and labels throughout the UI.
-  * Fully keyboard accessible.
-  * Semantic HTML output for screen readers and other assistive technologies.
+- Core Formatting Options:
+  - Text Styling: Bold, Italic, Underline, Strikethrough.
+  - Headings: H1 through H6 with both toolbar buttons and keyboard shortcuts.
+- List Formatting:
+  - Ordered Lists: Create numbered lists with proper semantic structure.
+  - Unordered Lists: Create bullet lists with proper semantic structure.
+- Content Elements:
+  - Links: Insert and edit hyperlinks with an accessible dialog.
+- Keyboard Shortcuts:
+  - Basic formatting: Ctrl/Cmd+B for bold, Ctrl/Cmd+I for italic, Ctrl/Cmd+U for underline.
+  - Heading shortcuts: Ctrl/Cmd+Alt+[1–6] for H1–H6.
+  - List shortcuts: Ctrl/Cmd+Shift+7 for ordered lists, Ctrl/Cmd+Shift+8 for unordered lists.
+  - Link shortcut: Ctrl/Cmd+K to insert or edit links.
+- Documentation:
+  - Keyboard Shortcuts Help: Overlay displaying all available keyboard commands.
+- Internationalization (i18n):
+  - Built-in support using react-i18next.
+  - Easy to add new languages and localize toolbar and prompt texts.
+- Accessibility (WCAG Compliant):
+  - ARIA roles and labels throughout the UI.
+  - Fully keyboard accessible.
+  - Semantic HTML output for screen readers and other assistive technologies.
 
 ## Installation
 
 ### Prerequisites
 
-* Node.js (v14+ recommended)
-* React (v16.8+, v17.0.0+, or v18.0.0+ for Hooks support)
-* Package Manager (npm, Yarn, or similar)
+- Node.js (v14+ recommended)
+- React (v16.8+, v17.0.0+, or v18.0.0+ for Hooks support)
+- Package Manager (npm, Yarn, or similar)
 
 ### Steps
 
@@ -58,7 +58,7 @@ git clone https://github.com/eventably/lexic-a11y.git
 cd lexic-a11y
 ```
 
-2. Install Dependencies:
+1. Install Dependencies:
 
 ```bash
 npm install
@@ -70,7 +70,7 @@ or
 yarn install
 ```
 
-3. Build the Package:
+1. Build the Package:
 
 If you plan to reuse this package in other projects, you can build it as a library:
 
@@ -132,14 +132,14 @@ The CSS is included when you import the styles as shown above. This provides sty
 
 ### Customizing the Editor
 
-* **Theme**: The editor accepts a theme object via the configuration in Editor.js that lets you define class names for various parts of the editor.
-* **Custom Styling**: Customize colors, fonts, and spacing by overriding the CSS classes to match your project's design guidelines.
+- **Theme**: The editor accepts a theme object via the configuration in Editor.js that lets you define class names for various parts of the editor.
+- **Custom Styling**: Customize colors, fonts, and spacing by overriding the CSS classes to match your project's design guidelines.
 
 ### Extending the Editor
 
-* **Keyboard Shortcuts**: The shortcuts are registered in ToolbarPlugin.js using event listeners. You can modify the key combinations or add new ones as needed.
-* **Internationalization**: Update the i18n.js file to add additional languages or modify existing translations. Use the useTranslation hook within any component to localize additional UI elements.
-* **Adding Features**: The editor is built with Lexical's modular architecture. To add further formatting options (e.g., images, horizontal rules, tables), follow Lexical's documentation to create and register new nodes.
+- **Keyboard Shortcuts**: The shortcuts are registered in ToolbarPlugin.js using event listeners. You can modify the key combinations or add new ones as needed.
+- **Internationalization**: Update the i18n.js file to add additional languages or modify existing translations. Use the useTranslation hook within any component to localize additional UI elements.
+- **Adding Features**: The editor is built with Lexical's modular architecture. To add further formatting options (e.g., images, horizontal rules, tables), follow Lexical's documentation to create and register new nodes.
 
 ## Development
 
@@ -153,14 +153,14 @@ To run the editor in a development environment:
 npm start
 ```
 
-This will launch the application in development mode. Open http://localhost:3000 to view it in your browser.
+This will launch the application in development mode. Open <http://localhost:3000> to view it in your browser.
 
-2. Making Changes:
+1. Making Changes:
 
-* Edit the source files in the /src directory.
-* The development server supports hot reloading, so your changes will appear automatically.
+- Edit the source files in the /src directory.
+- The development server supports hot reloading, so your changes will appear automatically.
 
-3. Running the Example Demo:
+1. Running the Example Demo:
 
 The repository includes a simple example implementation that showcases how to use the editor component:
 
@@ -172,7 +172,7 @@ npm run build
 npm run example
 ```
 
-This will start a development server with the example at http://localhost:1234. The example demonstrates a basic integration of the editor component and displays the generated HTML output.
+This will start a development server with the example at <http://localhost:1234>. The example demonstrates a basic integration of the editor component and displays the generated HTML output.
 
 You can also view the demo directly with:
 
@@ -188,7 +188,7 @@ You can also try the editor directly on CodeSandbox without installing anything 
 
 This opens our dedicated sandbox demo where you can interact with the editor and see how it works.
 
-### Building for Production:
+### Building for Production
 
 Once you are satisfied with your changes, build the package for production:
 
@@ -202,9 +202,9 @@ The production-ready files will be output to the /dist directory.
 
 We welcome contributions from the community! If you'd like to contribute:
 
-* Fork the Repository: Create your own fork and submit pull requests.
-* Submit Issues: Report bugs or request features using the repository's issue tracker.
-* Follow the Code Style: Ensure your code aligns with the existing style and includes appropriate documentation/comments.
+- Fork the Repository: Create your own fork and submit pull requests.
+- Submit Issues: Report bugs or request features using the repository's issue tracker.
+- Follow the Code Style: Ensure your code aligns with the existing style and includes appropriate documentation/comments.
 
 ## License
 

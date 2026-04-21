@@ -48,20 +48,15 @@ const theme = {
 const editorConfig = {
   namespace: 'LexicA11yDemo',
   theme,
-  onError: (error) => console.error(error),
-  nodes: [
-    HeadingNode,
-    ListNode,
-    ListItemNode,
-    LinkNode,
-  ],
+  onError: error => console.error(error),
+  nodes: [HeadingNode, ListNode, ListItemNode, LinkNode],
 };
 
 // Main App Component
 export default function App() {
   const [content, setContent] = useState('');
 
-  const onChange = (editorState) => {
+  const onChange = editorState => {
     editorState.read(() => {
       const htmlString = $generateHtmlFromNodes(editorState);
       setContent(htmlString);
@@ -73,8 +68,8 @@ export default function App() {
       <div className="container">
         <h1>Lexical Accessible Editor Demo</h1>
         <p>
-          A fully featured, accessible, and internationalized rich text editor 
-          built with React and Lexical.
+          A fully featured, accessible, and internationalized rich text editor built with React and
+          Lexical.
         </p>
 
         <div className="editor-container">
