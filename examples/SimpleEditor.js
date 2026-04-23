@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import Editor from '../dist/index';
+import { useState } from 'react';
 import { I18nextProvider } from 'react-i18next';
-import i18n from '../src/utils/i18n';
+import Editor from '../dist/index';
 import '../src/styles/Editor.css';
+import i18n from '../src/utils/i18n';
 
 /**
  * Simple example of how to use the Editor component

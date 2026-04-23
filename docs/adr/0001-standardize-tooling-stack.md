@@ -1,0 +1,81 @@
+# ADR 0001: Standardize tooling stack
+
+- **Status:** Accepted
+- **Date:** 2026-04-23
+- **Deciders:** @karlgroves
+
+## Context
+
+Issue #14 proposed a consistent, budget-conscious tooling stack covering
+linting, formatting, duplication detection, documentation, security, and
+performance. The project previously used ESLint (legacy config), Prettier,
+Stylelint, markdownlint, jscpd, and Husky, but with ad-hoc configuration that
+did not catch all the categories of issues we care about (security,
+accessibility beyond JSX, code smell, licensing, bundle size, secret leakage).
+
+## Decision
+
+We adopt the tooling listed in issue #14 with the following scope constraints:
+
+- **No TypeScript migration** — the project stays on JavaScript. TS-specific
+  rules and `tsconfig.json` are out of scope.
+- **No test framework migration** — Jest stays. Vitest migration and
+  `@afix/a11y-assert` integration are deferred.
+- **Express / SEO / SSR tooling is skipped** — this is a React library, not an
+  application. Items like `helmet`, `zod`, `react-helmet-async`, `llms.txt`,
+  `schema-dts`, and sitemap generation do not apply.
+- **Structural lint rules are warnings, not errors**, for
+  `max-lines`/`max-lines-per-function`/`complexity`/`cognitive-complexity`/
+  `max-depth`/`jsx-a11y/prefer-tag-over-role`/`react/jsx-no-leaked-render`. The
+  existing `ToolbarPlugin.js` exceeds several of these budgets; refactoring is
+  separate from tooling adoption.
+- **Stylelint a11y rules run at severity `warning`** for the same reason.
+- **`lint` does not use `--max-warnings=0`**; `lint:strict` does. The strict
+  form is available for future cleanup work.
+- **jscpd threshold raised from 1% to 5%** to tolerate small, pre-existing
+  shared code; sandbox/examples/root demo files are excluded from the
+  duplication scan.
+- **Security CVE scans (osv-scanner, semgrep) run manually or on schedule**, not
+  as part of `check:all`. The existing dev-only vulnerabilities in Parcel's
+  transitive dependencies would otherwise block every push.
+- **`@afix/a11y-assert`, Lighthouse CI, Playwright, React Compiler** are
+  deferred. The first is testing-related (out of scope); the others are
+  application concerns that do not fit a library.
+
+## Consequences
+
+### Positive
+
+- One command (`npm run check:all`) runs the full local gate.
+- ESLint flat config pulls in sonarjs, security, unicorn, import-x, promise, n,
+  jsdoc, and no-secrets on top of the existing React and a11y plugins.
+- Husky gates are layered: `pre-commit` (lint-staged + gitleaks), `commit-msg`
+  (commitlint), `pre-push` (`npm run check`), `post-merge` (audit on lockfile
+  change).
+- `size-limit` budgets (100 KB brotlied) enforce bundle discipline.
+- License compliance via `license-checker-rseidelsohn` with an allowlist.
+
+### Negative
+
+- Existing accessibility smells (role="dialog", role="presentation", small
+  font-sizes in CSS) surface as warnings that are not currently addressed. They
+  should be tracked separately.
+- `ToolbarPlugin.js` flags structural warnings (length, complexity, nesting). It
+  needs refactoring, tracked separately.
+- Bootstrap now requires Homebrew (`gitleaks`, `osv-scanner`, `semgrep`,
+  `lychee`). The pre-commit hook degrades gracefully if `gitleaks` is absent but
+  logs a warning.
+
+### Follow-ups
+
+- Refactor `ToolbarPlugin.js` to bring it under the complexity thresholds.
+- Fix the CSS a11y warnings (font-size thresholds, prefers-reduced-motion, focus
+  states on hover selectors).
+- Replace `role="dialog"`/`role="presentation"` JSX with native elements.
+- Consider migrating tests to Vitest and integrating `@afix/a11y-assert` at the
+  component level once the above refactors land.
+
+## References
+
+- Issue: #14
+- Templates: `docs/templates/ADR.md`, `docs/templates/README.md`

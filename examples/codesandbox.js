@@ -1,10 +1,10 @@
 // This file is the entry point for CodeSandbox
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { I18nextProvider } from 'react-i18next';
 import Editor from '../src';
-import i18n from '../src/utils/i18n';
 import '../src/styles/Editor.css';
+import i18n from '../src/utils/i18n';
 
 // A simplified version of SimpleEditor that imports directly from src instead of dist
 function CodeSandboxEditor() {

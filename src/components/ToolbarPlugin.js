@@ -1,24 +1,24 @@
 // ToolbarPlugin.js
-import React, { useEffect, useCallback, useState, useRef } from 'react';
-import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
-import {
-  $getSelection,
-  $isRangeSelection,
-  $createParagraphNode,
-  KEY_ESCAPE_COMMAND,
-  COMMAND_PRIORITY_HIGH,
-  FORMAT_TEXT_COMMAND,
-} from 'lexical';
-import { $setBlocksType } from '@lexical/selection';
-import { $createHeadingNode, $isHeadingNode } from '@lexical/rich-text';
 import { TOGGLE_LINK_COMMAND } from '@lexical/link';
 import {
+  $isListItemNode,
+  $isListNode,
   INSERT_ORDERED_LIST_COMMAND,
   INSERT_UNORDERED_LIST_COMMAND,
   REMOVE_LIST_COMMAND,
-  $isListNode,
-  $isListItemNode,
 } from '@lexical/list';
+import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
+import { $createHeadingNode, $isHeadingNode } from '@lexical/rich-text';
+import { $setBlocksType } from '@lexical/selection';
+import {
+  $createParagraphNode,
+  $getSelection,
+  $isRangeSelection,
+  COMMAND_PRIORITY_HIGH,
+  FORMAT_TEXT_COMMAND,
+  KEY_ESCAPE_COMMAND,
+} from 'lexical';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 export function ToolbarPlugin({ showDocs, setShowDocs }) {
@@ -39,7 +39,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
 
   // Helper to apply heading formatting with toggle functionality
   const setHeading = useCallback(
-    tag => {
+    (tag) => {
       editor.update(() => {
         const selection = $getSelection();
         if (!$isRangeSelection(selection)) return;
@@ -82,12 +82,12 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
         }
       });
     },
-    [editor]
+    [editor],
   );
 
   // Register keyboard shortcuts
   useEffect(() => {
-    const handleKeyDown = e => {
+    const handleKeyDown = (e) => {
       const isMac = navigator.platform.toUpperCase().includes('MAC');
       const mod = isMac ? e.metaKey : e.ctrlKey;
 
@@ -118,7 +118,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
           }
           case 'd':
             e.preventDefault();
-            setShowDocs(prevState => !prevState);
+            setShowDocs((prevState) => !prevState);
             break;
           case '8':
             if (e.shiftKey) {
@@ -187,13 +187,13 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
         }
         return false;
       },
-      COMMAND_PRIORITY_HIGH
+      COMMAND_PRIORITY_HIGH,
     );
   }, [editor, showLinkDialog]);
 
   // Helper function to toggle list formats
   const toggleList = useCallback(
-    listType => {
+    (listType) => {
       try {
         if (listType === 'bullet' && isUnorderedListActive) {
           // Remove the list if it's already active
@@ -213,7 +213,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
         console.error('Error toggling list:', error);
       }
     },
-    [editor, isOrderedListActive, isUnorderedListActive]
+    [editor, isOrderedListActive, isUnorderedListActive],
   );
 
   // Update active formats when selection changes
@@ -265,7 +265,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
               setIsItalic(italicActive);
               setIsUnderline(underlineActive);
               setIsStrikethrough(strikethroughActive);
-            } catch (error) {
+            } catch (_error) {
               // Reset formatting state on error
               setIsBold(false);
               setIsItalic(false);
@@ -284,7 +284,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
               if (!anchorNode) return;
 
               // Helper to check for headings
-              const findHeadingTag = node => {
+              const findHeadingTag = (node) => {
                 if (!node) return null;
 
                 // Check if node is a heading
@@ -298,7 +298,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
                   if (parent && $isHeadingNode(parent)) {
                     return parent.getTag();
                   }
-                } catch (e) {
+                } catch (_e) {
                   // Ignore errors when getting parent
                 }
 
@@ -309,11 +309,11 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
               headingTag = findHeadingTag(anchorNode);
 
               // Helper to safely get parent
-              const getParentSafely = node => {
+              const getParentSafely = (node) => {
                 if (!node) return null;
                 try {
                   return node.getParent();
-                } catch (e) {
+                } catch (_e) {
                   return null;
                 }
               };
@@ -337,7 +337,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
                       } else if (listType === 'number') {
                         orderedListActive = true;
                       }
-                    } catch (e) {
+                    } catch (_e) {
                       // Ignore list type errors
                     }
                   }
@@ -347,7 +347,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
                 current = getParentSafely(current);
                 depth++;
               }
-            } catch (e) {
+            } catch (_e) {
               // Silently fail node traversal
             }
 
@@ -355,7 +355,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
             setActiveHeadingTag(headingTag);
             setIsOrderedListActive(orderedListActive);
             setIsUnorderedListActive(unorderedListActive);
-          } catch (e) {
+          } catch (_e) {
             // Reset all states if there's an error
             setActiveHeadingTag(null);
             setIsOrderedListActive(false);
@@ -366,7 +366,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
             setIsStrikethrough(false);
           }
         });
-      } catch (error) {
+      } catch (_error) {
         // Silently fail the entire update
       }
     };
@@ -387,7 +387,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
         updateToolbar();
         return false; // Don't block other handlers
       },
-      COMMAND_PRIORITY_HIGH
+      COMMAND_PRIORITY_HIGH,
     );
 
     // Clean up both listeners
@@ -748,7 +748,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
 
       <div className="toolbar-group toolbar-right">
         <button
-          onClick={() => setShowDocs(prevState => !prevState)}
+          onClick={() => setShowDocs((prevState) => !prevState)}
           aria-label={t('showHelp')}
           aria-pressed={showDocs}
           className={`docs-button ${showDocs ? 'active' : ''}`}
@@ -774,11 +774,11 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
         </button>
       </div>
 
-      {showLinkDialog && (
+      {showLinkDialog ? (
         <div
           className="link-dialog-overlay"
           onClick={() => setShowLinkDialog(false)}
-          onKeyDown={e => {
+          onKeyDown={(e) => {
             if (e.key === 'Escape') {
               setShowLinkDialog(false);
             }
@@ -802,7 +802,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
                   type="text"
                   id="link-url"
                   value={linkUrl}
-                  onChange={e => setLinkUrl(e.target.value)}
+                  onChange={(e) => setLinkUrl(e.target.value)}
                   placeholder="https://example.com"
                   aria-required="true"
                 />
@@ -814,7 +814,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
                   type="text"
                   id="link-text"
                   value={linkText}
-                  onChange={e => setLinkText(e.target.value)}
+                  onChange={(e) => setLinkText(e.target.value)}
                   placeholder={t('linkText')}
                 />
               </div>
@@ -885,7 +885,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
             </div>
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

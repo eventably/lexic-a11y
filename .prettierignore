@@ -1,11 +1,44 @@
-node_modules
-dist
-build
-coverage
+# Build outputs
+dist/
+build/
+out/
+coverage/
+.next/
+.turbo/
+.vite/
+storybook-static/
+
+# Dependencies
+node_modules/
+.pnp.*
+.yarn/
+
+# Generated
 *.min.js
 *.min.css
+*.generated.*
+**/generated/**
+*.d.ts.map
+*.js.map
+pnpm-lock.yaml
 package-lock.json
 yarn.lock
-pnpm-lock.yaml
-.next
-.nuxt
+
+# Env and secrets
+.env*
+!.env.example
+
+# Logs and caches
+*.log
+.cache/
+.eslintcache
+.stylelintcache
+
+# Editor
+.vscode/
+.idea/
+
+# Misc
+.DS_Store
+CHANGELOG.md
+LICENSE

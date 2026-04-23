@@ -1,20 +1,19 @@
 // Editor.js
-import React, { useState } from 'react';
-import { LexicalComposer } from '@lexical/react/LexicalComposer';
-import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
-import { ContentEditable } from '@lexical/react/LexicalContentEditable';
-import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
-import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
-import LexicalErrorBoundary from '@lexical/react/LexicalErrorBoundary';
 import { $generateHtmlFromNodes } from '@lexical/html';
-// No helper functions needed with the simplified HTML cleaning approach
-import { ToolbarPlugin } from './ToolbarPlugin';
-import { HeadingNode } from '@lexical/rich-text';
-import { ListNode, ListItemNode } from '@lexical/list';
-import { QuoteNode } from '@lexical/rich-text';
 import { LinkNode } from '@lexical/link';
+import { ListItemNode, ListNode } from '@lexical/list';
+import { LexicalComposer } from '@lexical/react/LexicalComposer';
+import { ContentEditable } from '@lexical/react/LexicalContentEditable';
+import LexicalErrorBoundary from '@lexical/react/LexicalErrorBoundary';
+import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
 import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin';
 import { ListPlugin } from '@lexical/react/LexicalListPlugin';
+import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
+import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
+import { HeadingNode, QuoteNode } from '@lexical/rich-text';
+import { useState } from 'react';
+
+import { ToolbarPlugin } from './ToolbarPlugin';
 // Temporarily comment out missing imports
 // import { ImageNode } from '@lexical/image';
 // import { HorizontalRuleNode } from '@lexical/react/LexicalHorizontalRuleNode';
@@ -102,7 +101,7 @@ export default function Editor({ onContentChange }) {
         </div>
       </div>
 
-      {showDocs && (
+      {showDocs ? (
         <div className="editor-docs-overlay" aria-label="Editor documentation">
           <div className="editor-docs-content">
             <div className="editor-docs-header">
@@ -162,7 +161,7 @@ export default function Editor({ onContentChange }) {
             </div>
           </div>
         </div>
-      )}
+      ) : null}
     </LexicalComposer>
   );
 }
