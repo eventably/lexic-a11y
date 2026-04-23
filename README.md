@@ -172,7 +172,7 @@ npm run build
 npm run example
 ```
 
-This will start a development server with the example at <http://localhost:1234>. The example demonstrates a basic integration of the editor component and displays the generated HTML output.
+This starts the Vite dev server and opens the example at <http://localhost:4001/examples/>. The example demonstrates a basic integration of the editor component and displays the generated HTML output.
 
 You can also view the demo directly with:
 
