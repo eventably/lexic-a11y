@@ -1,20 +1,39 @@
 # lexic-a11y: An accessible Lexical Rich Text Editor Package
 
-An accessible and internationalized rich text editor built with React and Lexical. This package provides a modular editor focused on accessibility that supports core formatting options. It is designed to be easily integrated into any React application and to serve as a reusable component for projects requiring high accessibility (WCAG compliant) text editing capabilities.
+An accessible and internationalized rich text editor built with React and
+Lexical. This package provides a modular editor focused on accessibility that
+supports core formatting options. It is designed to be easily integrated into
+any React application and to serve as a reusable component for projects
+requiring high accessibility (WCAG compliant) text editing capabilities.
 
 ## Overview
 
-lexic-a11y is a self-contained, React-based editor that emphasizes accessibility, extensibility, and internationalization. It leverages the modern Lexical framework by Meta to provide a headless editing experience that can be easily extended and customized. Designed with WCAG-compliant practices in mind, it provides keyboard shortcuts and accessibility features that make rich text editing more accessible to all users.
+lexic-a11y is a self-contained, React-based editor that emphasizes
+accessibility, extensibility, and internationalization. It leverages the modern
+Lexical framework by Meta to provide a headless editing experience that can be
+easily extended and customized. Designed with WCAG-compliant practices in mind,
+it provides keyboard shortcuts and accessibility features that make rich text
+editing more accessible to all users.
 
 ## What It Does
 
-- Rich Text Editing: Offers essential text formatting including bold, italic, underline, strikethrough, and a full range of headings (H1–H6).
-- List Support: Create and manage ordered and unordered lists with proper semantic structure.
-- Link Management: Insert and edit hyperlinks with an accessible dialog interface.
-- Keyboard Shortcuts: Implements a variety of keyboard shortcuts for quick formatting actions (e.g., Ctrl/Cmd+B for bold, Ctrl/Cmd+Alt+1 for Heading 1) and efficient navigation.
-- Documentation: Provides an overlay with available keyboard shortcuts and usage tips.
-- Internationalization (i18n): Integrated with react-i18next to allow localization of toolbar labels and prompts, making it adaptable for multi-language projects.
-- Accessibility: Designed with accessibility in mind, including ARIA roles, keyboard navigability, and semantic output to ensure compliance with WCAG standards.
+- Rich Text Editing: Offers essential text formatting including bold, italic,
+  underline, strikethrough, and a full range of headings (H1–H6).
+- List Support: Create and manage ordered and unordered lists with proper
+  semantic structure.
+- Link Management: Insert and edit hyperlinks with an accessible dialog
+  interface.
+- Keyboard Shortcuts: Implements a variety of keyboard shortcuts for quick
+  formatting actions (e.g., Ctrl/Cmd+B for bold, Ctrl/Cmd+Alt+1 for Heading 1)
+  and efficient navigation.
+- Documentation: Provides an overlay with available keyboard shortcuts and usage
+  tips.
+- Internationalization (i18n): Integrated with react-i18next to allow
+  localization of toolbar labels and prompts, making it adaptable for
+  multi-language projects.
+- Accessibility: Designed with accessibility in mind, including ARIA roles,
+  keyboard navigability, and semantic output to ensure compliance with WCAG
+  standards.
 
 ## Features
 
@@ -27,9 +46,11 @@ lexic-a11y is a self-contained, React-based editor that emphasizes accessibility
 - Content Elements:
   - Links: Insert and edit hyperlinks with an accessible dialog.
 - Keyboard Shortcuts:
-  - Basic formatting: Ctrl/Cmd+B for bold, Ctrl/Cmd+I for italic, Ctrl/Cmd+U for underline.
+  - Basic formatting: Ctrl/Cmd+B for bold, Ctrl/Cmd+I for italic, Ctrl/Cmd+U for
+    underline.
   - Heading shortcuts: Ctrl/Cmd+Alt+[1–6] for H1–H6.
-  - List shortcuts: Ctrl/Cmd+Shift+7 for ordered lists, Ctrl/Cmd+Shift+8 for unordered lists.
+  - List shortcuts: Ctrl/Cmd+Shift+7 for ordered lists, Ctrl/Cmd+Shift+8 for
+    unordered lists.
   - Link shortcut: Ctrl/Cmd+K to insert or edit links.
 - Documentation:
   - Keyboard Shortcuts Help: Overlay displaying all available keyboard commands.
@@ -45,9 +66,11 @@ lexic-a11y is a self-contained, React-based editor that emphasizes accessibility
 
 ### Prerequisites
 
-- Node.js (v14+ recommended)
+- Node.js (v20+; version pinned in `.nvmrc` / `.node-version`)
+- npm v10+ (enforced via `engine-strict=true` in `.npmrc`)
 - React (v16.8+, v17.0.0+, or v18.0.0+ for Hooks support)
-- Package Manager (npm, Yarn, or similar)
+- Homebrew (macOS/Linux) — used by the bootstrap script to install security
+  binaries (`gitleaks`, `osv-scanner`, `semgrep`, `lychee`)
 
 ### Steps
 
@@ -58,27 +81,29 @@ git clone https://github.com/eventably/lexic-a11y.git
 cd lexic-a11y
 ```
 
-1. Install Dependencies:
+1. Bootstrap (installs required Homebrew binaries and npm deps):
+
+```bash
+bash scripts/bootstrap.sh
+```
+
+Or, if you already have the security binaries installed, run the plain install:
 
 ```bash
 npm install
 ```
 
-or
-
-```bash
-yarn install
-```
-
 1. Build the Package:
 
-If you plan to reuse this package in other projects, you can build it as a library:
+If you plan to reuse this package in other projects, you can build it as a
+library:
 
 ```bash
 npm run build
 ```
 
-This will generate a bundled version of the editor that can be imported into your projects.
+This will generate a bundled version of the editor that can be imported into
+your projects.
 
 ## Usage
 
@@ -122,24 +147,33 @@ const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <I18nextProvider i18n={i18n}>
     <App />
-  </I18nextProvider>
+  </I18nextProvider>,
 );
 ```
 
 #### 3. Styling
 
-The CSS is included when you import the styles as shown above. This provides styling for the toolbar and editor components.
+The CSS is included when you import the styles as shown above. This provides
+styling for the toolbar and editor components.
 
 ### Customizing the Editor
 
-- **Theme**: The editor accepts a theme object via the configuration in Editor.js that lets you define class names for various parts of the editor.
-- **Custom Styling**: Customize colors, fonts, and spacing by overriding the CSS classes to match your project's design guidelines.
+- **Theme**: The editor accepts a theme object via the configuration in
+  Editor.js that lets you define class names for various parts of the editor.
+- **Custom Styling**: Customize colors, fonts, and spacing by overriding the CSS
+  classes to match your project's design guidelines.
 
 ### Extending the Editor
 
-- **Keyboard Shortcuts**: The shortcuts are registered in ToolbarPlugin.js using event listeners. You can modify the key combinations or add new ones as needed.
-- **Internationalization**: Update the i18n.js file to add additional languages or modify existing translations. Use the useTranslation hook within any component to localize additional UI elements.
-- **Adding Features**: The editor is built with Lexical's modular architecture. To add further formatting options (e.g., images, horizontal rules, tables), follow Lexical's documentation to create and register new nodes.
+- **Keyboard Shortcuts**: The shortcuts are registered in ToolbarPlugin.js using
+  event listeners. You can modify the key combinations or add new ones as
+  needed.
+- **Internationalization**: Update the i18n.js file to add additional languages
+  or modify existing translations. Use the useTranslation hook within any
+  component to localize additional UI elements.
+- **Adding Features**: The editor is built with Lexical's modular architecture.
+  To add further formatting options (e.g., images, horizontal rules, tables),
+  follow Lexical's documentation to create and register new nodes.
 
 ## Development
 
@@ -153,16 +187,19 @@ To run the editor in a development environment:
 npm start
 ```
 
-This will launch the application in development mode. Open <http://localhost:3000> to view it in your browser.
+This will launch the application in development mode. Open
+<http://localhost:3000> to view it in your browser.
 
 1. Making Changes:
 
 - Edit the source files in the /src directory.
-- The development server supports hot reloading, so your changes will appear automatically.
+- The development server supports hot reloading, so your changes will appear
+  automatically.
 
 1. Running the Example Demo:
 
-The repository includes a simple example implementation that showcases how to use the editor component:
+The repository includes a simple example implementation that showcases how to
+use the editor component:
 
 ```bash
 # First build the library
@@ -172,7 +209,9 @@ npm run build
 npm run example
 ```
 
-This will start a development server with the example at <http://localhost:1234>. The example demonstrates a basic integration of the editor component and displays the generated HTML output.
+This will start a development server with the example at
+<http://localhost:1234>. The example demonstrates a basic integration of the
+editor component and displays the generated HTML output.
 
 You can also view the demo directly with:
 
@@ -182,11 +221,13 @@ npm run build && npm run example
 
 ### Try it on CodeSandbox
 
-You can also try the editor directly on CodeSandbox without installing anything locally:
+You can also try the editor directly on CodeSandbox without installing anything
+locally:
 
 [![Edit lexic-a11y](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/p/sandbox/github/eventably/lexic-a11y/tree/develop/sandbox)
 
-This opens our dedicated sandbox demo where you can interact with the editor and see how it works.
+This opens our dedicated sandbox demo where you can interact with the editor and
+see how it works.
 
 ### Building for Production
 
@@ -202,10 +243,41 @@ The production-ready files will be output to the /dist directory.
 
 We welcome contributions from the community! If you'd like to contribute:
 
-- Fork the Repository: Create your own fork and submit pull requests.
-- Submit Issues: Report bugs or request features using the repository's issue tracker.
-- Follow the Code Style: Ensure your code aligns with the existing style and includes appropriate documentation/comments.
+- **Fork & branch:** Branch off `develop` (`feature/<issue>-<slug>`).
+- **Before pushing:** Run `npm run check:all` — this runs lint, tests, build,
+  duplication check, bundle size, license compliance, `npm audit`, and gitleaks.
+- **Commit style:** [Conventional Commits](https://www.conventionalcommits.org/)
+  (enforced by commitlint via the `commit-msg` hook).
+- **Open issues:** Use the repository's issue tracker for bugs or feature
+  requests.
+
+### Available scripts
+
+| Script                  | Purpose                                       |
+| ----------------------- | --------------------------------------------- |
+| `npm start`             | Start Vite dev server (demo)                  |
+| `npm run build`         | Build the library (Rollup → `dist/`)          |
+| `npm run build:analyze` | Build with bundle visualizer report           |
+| `npm test`              | Run the Jest test suite                       |
+| `npm run lint`          | Run ESLint                                    |
+| `npm run lint:css`      | Run Stylelint                                 |
+| `npm run lint:md`       | Run markdownlint-cli2                         |
+| `npm run format`        | Run Prettier (write mode)                     |
+| `npm run format:check`  | Run Prettier in check mode                    |
+| `npm run dupes`         | Run jscpd duplication check                   |
+| `npm run size`          | Enforce `size-limit` budgets                  |
+| `npm run links`         | Check markdown links with `lychee`            |
+| `npm run security`      | Run npm audit + OSV + Semgrep + gitleaks      |
+| `npm run license:check` | Verify production dependency licenses         |
+| `npm run check`         | Lint + stylelint + markdown + format:check    |
+| `npm run check:all`     | Full local gate (used by the `pre-push` hook) |
+
+### Architecture decisions
+
+See [`docs/adr/`](./docs/adr/) for architectural decision records. Use
+[`docs/templates/ADR.md`](./docs/templates/ADR.md) to draft new ones.
 
 ## License
 
-This project is licensed under the MIT License. See the LICENSE file for more details.
+This project is licensed under the MIT License. See the LICENSE file for more
+details.

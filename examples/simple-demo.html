@@ -73,7 +73,7 @@
           const i18n = i18nModule.default;
 
           // Function to update the HTML output
-          const updateOutput = html => {
+          const updateOutput = (html) => {
             document.getElementById('html-output').textContent = html;
           };
 
@@ -82,7 +82,7 @@
             return React.createElement(
               I18nextProvider,
               { i18n },
-              React.createElement(SimpleEditor, { onContentChange: updateOutput })
+              React.createElement(SimpleEditor, { onContentChange: updateOutput }),
             );
           };
 

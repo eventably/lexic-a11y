@@ -1,17 +1,14 @@
-import React from 'react';
+import { INSERT_ORDERED_LIST_COMMAND, INSERT_UNORDERED_LIST_COMMAND } from '@lexical/list';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
-import { useTranslation } from 'react-i18next';
+import { $createHeadingNode } from '@lexical/rich-text';
+import { $setBlocksType } from '@lexical/selection';
 import {
+  $createParagraphNode,
   $getSelection,
   $isRangeSelection,
   FORMAT_TEXT_COMMAND,
-  COMMAND_PRIORITY_NORMAL,
-  $createParagraphNode,
-  $getRoot,
 } from 'lexical';
-import { INSERT_ORDERED_LIST_COMMAND, INSERT_UNORDERED_LIST_COMMAND } from '@lexical/list';
-import { $createHeadingNode, $isHeadingNode } from '@lexical/rich-text';
-import { $setBlocksType } from '@lexical/selection';
+import { useTranslation } from 'react-i18next';
 
 export default function ToolbarPlugin() {
   const [editor] = useLexicalComposerContext();
@@ -41,7 +38,7 @@ export default function ToolbarPlugin() {
     editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined);
   };
 
-  const formatHeading = headingSize => {
+  const formatHeading = (headingSize) => {
     editor.update(() => {
       const selection = $getSelection();
       if ($isRangeSelection(selection)) {

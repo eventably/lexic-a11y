@@ -1,12 +1,15 @@
-import babel from '@rollup/plugin-babel';
-import resolve from '@rollup/plugin-node-resolve';
-import commonjs from '@rollup/plugin-commonjs';
-import { terser } from 'rollup-plugin-terser';
-import peerDepsExternal from 'rollup-plugin-peer-deps-external';
-import postcss from 'rollup-plugin-postcss';
 import path from 'path';
 
+import babel from '@rollup/plugin-babel';
+import commonjs from '@rollup/plugin-commonjs';
+import resolve from '@rollup/plugin-node-resolve';
+import peerDepsExternal from 'rollup-plugin-peer-deps-external';
+import postcss from 'rollup-plugin-postcss';
+import { terser } from 'rollup-plugin-terser';
+import { visualizer } from 'rollup-plugin-visualizer';
+
 const packageJson = require('./package.json');
+const shouldVisualize = process.env.ANALYZE === 'true';
 
 export default {
   input: 'src/index.js',
@@ -39,6 +42,13 @@ export default {
       minimize: true,
     }),
     terser(),
-  ],
+    shouldVisualize &&
+      visualizer({
+        filename: 'reports/bundle-stats.html',
+        gzipSize: true,
+        brotliSize: true,
+        template: 'treemap',
+      }),
+  ].filter(Boolean),
   external: Object.keys(packageJson.peerDependencies || {}),
 };

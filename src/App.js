@@ -1,9 +1,10 @@
 // App.js
-import React, { useState } from 'react';
-import Editor from './components/Editor';
+import { useState } from 'react';
 import { I18nextProvider } from 'react-i18next';
-import i18n from './utils/i18n';
+
+import Editor from './components/Editor';
 import './styles/Editor.css';
+import i18n from './utils/i18n';
 
 export default function App() {
   const [content, setContent] = useState('');

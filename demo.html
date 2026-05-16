@@ -126,7 +126,7 @@
       updateOutput();
 
       // Add click handlers to buttons
-      buttons.forEach(button => {
+      buttons.forEach((button) => {
         button.addEventListener('click', () => {
           const command = button.dataset.command;
           const value = button.dataset.value || null;
@@ -150,7 +150,7 @@
       editor.addEventListener('input', updateOutput);
 
       // Add keyboard shortcuts
-      document.addEventListener('keydown', e => {
+      document.addEventListener('keydown', (e) => {
         if (e.ctrlKey || e.metaKey) {
           switch (e.key.toLowerCase()) {
             case 'b':

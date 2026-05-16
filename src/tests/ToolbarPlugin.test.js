@@ -1,19 +1,19 @@
-import React from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ToolbarPlugin } from '../components/ToolbarPlugin';
 import { I18nextProvider } from 'react-i18next';
+
+import { ToolbarPlugin } from '../components/ToolbarPlugin';
 import i18n from '../utils/i18n';
 
 // Mock Lexical API
 const mockEditor = {
-  update: jest.fn(callback => callback()),
+  update: jest.fn((callback) => callback()),
   dispatchCommand: jest.fn(),
   registerCommand: jest.fn(() => () => {}),
   registerUpdateListener: jest.fn(() => () => {}),
   focus: jest.fn(),
   getEditorState: jest.fn().mockReturnValue({
-    read: jest.fn(cb => cb()),
+    read: jest.fn((cb) => cb()),
   }),
 };
 
@@ -80,7 +80,7 @@ jest.mock('@lexical/link', () => ({
 }));
 
 // Helper for rendering with i18n provider
-const renderWithI18n = component => {
+const renderWithI18n = (component) => {
   return render(<I18nextProvider i18n={i18n}>{component}</I18nextProvider>);
 };
 
@@ -169,7 +169,7 @@ describe('ToolbarPlugin Component', () => {
     expect(mockEditor.registerCommand).toHaveBeenCalledWith(
       'escape',
       expect.any(Function),
-      1 // COMMAND_PRIORITY_HIGH
+      1, // COMMAND_PRIORITY_HIGH
     );
   });
 

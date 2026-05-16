@@ -1,22 +1,30 @@
 {
-  "threshold": 0,
-  "reporters": ["html", "console", "json"],
+  "threshold": 5,
+  "minTokens": 50,
+  "minLines": 5,
+  "maxLines": 1000,
+  "maxSize": "100kb",
+  "reporters": ["console", "html"],
+  "output": "./reports/jscpd",
+  "format": ["javascript", "jsx", "css", "scss", "markdown"],
   "ignore": [
     "**/node_modules/**",
     "**/dist/**",
     "**/build/**",
     "**/coverage/**",
-    "**/*.min.js",
-    "**/*.min.css",
-    "**/package-lock.json",
-    "**/yarn.lock"
+    "**/sandbox/**",
+    "**/examples/**",
+    "App.js",
+    "**/*.test.{js,jsx}",
+    "**/*.spec.{js,jsx}",
+    "**/__fixtures__/**",
+    "**/__snapshots__/**",
+    "**/generated/**",
+    "**/*.generated.*",
+    "**/*.min.*"
   ],
+  "absolute": true,
   "gitignore": true,
-  "minLines": 5,
-  "minTokens": 50,
-  "maxLines": 1000,
-  "maxSize": "100kb",
-  "format": ["javascript", "typescript", "jsx", "tsx", "css", "scss", "json"],
-  "absolute": false,
-  "output": "./reports/jscpd"
+  "silent": false,
+  "exitCode": 1
 }

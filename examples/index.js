@@ -12,6 +12,6 @@ if (!window.hasRendered) {
   root.render(
     <React.StrictMode>
       <SimpleEditor />
-    </React.StrictMode>
+    </React.StrictMode>,
   );
 }
