@@ -27,10 +27,17 @@ const mockAnchorNode = {
   getParent: jest.fn(() => null),
 };
 
+// Mock text nodes returned by selection.getNodes() for clear-formatting tests
+const mockTextNodes = [
+  { setFormat: jest.fn(), setStyle: jest.fn() },
+  { setFormat: jest.fn(), setStyle: jest.fn() },
+];
+
 const mockSelection = {
   isRange: true,
   isCollapsed: jest.fn(() => false),
   getTextContent: jest.fn(() => 'selected text'),
+  getNodes: jest.fn(() => mockTextNodes),
   insertText: jest.fn(),
   insertNodes: jest.fn(),
   modify: jest.fn(),
@@ -49,6 +56,7 @@ jest.mock('lexical', () => {
   return {
     $getSelection: jest.fn(() => mockSelection),
     $isRangeSelection: jest.fn(() => true),
+    $isTextNode: jest.fn(() => true),
     $createParagraphNode: jest.fn(() => ({})),
     KEY_ESCAPE_COMMAND: 'escape',
     COMMAND_PRIORITY_HIGH: 1,
@@ -161,6 +169,44 @@ describe('ToolbarPlugin Component', () => {
     await user.click(h1Button);
 
     expect(mockEditor.update).toHaveBeenCalled();
+  });
+
+  it('renders the clear formatting button', () => {
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    const clearButton = screen.getByLabelText('Clear Formatting');
+    expect(clearButton).toBeInTheDocument();
+    // Action button, not a toggle — must not expose aria-pressed
+    expect(clearButton).not.toHaveAttribute('aria-pressed');
+  });
+
+  it('clears inline formats and resets blocks when clear formatting is clicked', async () => {
+    const user = userEvent.setup();
+    const { $setBlocksType } = require('@lexical/selection');
+    const { $createParagraphNode } = require('lexical');
+    $setBlocksType.mockClear();
+    $createParagraphNode.mockClear();
+    mockTextNodes.forEach((node) => {
+      node.setFormat.mockClear();
+      node.setStyle.mockClear();
+    });
+
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+    await user.click(screen.getByLabelText('Clear Formatting'));
+
+    expect(mockEditor.update).toHaveBeenCalled();
+
+    // Inline marks and styles cleared on every selected text node
+    mockTextNodes.forEach((node) => {
+      expect(node.setFormat).toHaveBeenCalledWith(0);
+      expect(node.setStyle).toHaveBeenCalledWith('');
+    });
+
+    // Blocks reset to paragraphs
+    expect($setBlocksType).toHaveBeenCalled();
+    const creator = $setBlocksType.mock.calls[$setBlocksType.mock.calls.length - 1][1];
+    creator();
+    expect($createParagraphNode).toHaveBeenCalled();
   });
 
   it('registers escape key command handler', () => {

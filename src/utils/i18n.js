@@ -10,6 +10,7 @@ i18n.use(initReactI18next).init({
         italic: 'Italic',
         underline: 'Underline',
         strikethrough: 'Strikethrough',
+        clearFormatting: 'Clear Formatting',
         heading1: 'H1',
         heading2: 'H2',
         heading3: 'H3',
