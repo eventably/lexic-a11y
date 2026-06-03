@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { I18nextProvider } from 'react-i18next';
 
@@ -52,7 +52,12 @@ jest.mock('lexical', () => {
     $createParagraphNode: jest.fn(() => ({})),
     KEY_ESCAPE_COMMAND: 'escape',
     COMMAND_PRIORITY_HIGH: 1,
+    COMMAND_PRIORITY_LOW: 0,
     FORMAT_TEXT_COMMAND: 'format-text',
+    UNDO_COMMAND: 'undo',
+    REDO_COMMAND: 'redo',
+    CAN_UNDO_COMMAND: 'can-undo',
+    CAN_REDO_COMMAND: 'can-redo',
     ElementNode,
     TextNode,
   };
@@ -161,6 +166,81 @@ describe('ToolbarPlugin Component', () => {
     await user.click(h1Button);
 
     expect(mockEditor.update).toHaveBeenCalled();
+  });
+
+  // Helper to find a command handler registered with the mock editor
+  const getRegisteredHandler = (command) => {
+    const call = mockEditor.registerCommand.mock.calls.find(([cmd]) => cmd === command);
+    return call ? call[1] : null;
+  };
+
+  it('renders undo and redo buttons disabled by default', () => {
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    const undoButton = screen.getByLabelText('Undo');
+    const redoButton = screen.getByLabelText('Redo');
+
+    expect(undoButton).toBeInTheDocument();
+    expect(redoButton).toBeInTheDocument();
+    expect(undoButton).toBeDisabled();
+    expect(redoButton).toBeDisabled();
+    expect(undoButton).toHaveAttribute('aria-disabled', 'true');
+    expect(redoButton).toHaveAttribute('aria-disabled', 'true');
+  });
+
+  it('registers listeners for undo/redo availability', () => {
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    expect(getRegisteredHandler('can-undo')).toEqual(expect.any(Function));
+    expect(getRegisteredHandler('can-redo')).toEqual(expect.any(Function));
+  });
+
+  it('enables the undo button when undo becomes available and dispatches UNDO_COMMAND', async () => {
+    const user = userEvent.setup();
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    // Simulate the editor reporting undo availability
+    act(() => {
+      getRegisteredHandler('can-undo')(true);
+    });
+
+    const undoButton = screen.getByLabelText('Undo');
+    expect(undoButton).toBeEnabled();
+    expect(undoButton).toHaveAttribute('aria-disabled', 'false');
+
+    await user.click(undoButton);
+    expect(mockEditor.dispatchCommand).toHaveBeenCalledWith('undo', undefined);
+  });
+
+  it('enables the redo button when redo becomes available and dispatches REDO_COMMAND', async () => {
+    const user = userEvent.setup();
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    // Simulate the editor reporting redo availability
+    act(() => {
+      getRegisteredHandler('can-redo')(true);
+    });
+
+    const redoButton = screen.getByLabelText('Redo');
+    expect(redoButton).toBeEnabled();
+    expect(redoButton).toHaveAttribute('aria-disabled', 'false');
+
+    await user.click(redoButton);
+    expect(mockEditor.dispatchCommand).toHaveBeenCalledWith('redo', undefined);
+  });
+
+  it('disables the undo button again when undo becomes unavailable', () => {
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    act(() => {
+      getRegisteredHandler('can-undo')(true);
+    });
+    expect(screen.getByLabelText('Undo')).toBeEnabled();
+
+    act(() => {
+      getRegisteredHandler('can-undo')(false);
+    });
+    expect(screen.getByLabelText('Undo')).toBeDisabled();
   });
 
   it('registers escape key command handler', () => {

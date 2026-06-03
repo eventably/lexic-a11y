@@ -6,6 +6,8 @@ i18n.use(initReactI18next).init({
   resources: {
     en: {
       translation: {
+        undo: 'Undo',
+        redo: 'Redo',
         bold: 'Bold',
         italic: 'Italic',
         underline: 'Underline',

@@ -14,9 +14,14 @@ import {
   $createParagraphNode,
   $getSelection,
   $isRangeSelection,
+  CAN_REDO_COMMAND,
+  CAN_UNDO_COMMAND,
   COMMAND_PRIORITY_HIGH,
+  COMMAND_PRIORITY_LOW,
   FORMAT_TEXT_COMMAND,
   KEY_ESCAPE_COMMAND,
+  REDO_COMMAND,
+  UNDO_COMMAND,
 } from 'lexical';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -34,6 +39,8 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
   const [isItalic, setIsItalic] = useState(false);
   const [isUnderline, setIsUnderline] = useState(false);
   const [isStrikethrough, setIsStrikethrough] = useState(false);
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
   const dialogRef = useRef(null);
   const urlInputRef = useRef(null);
 
@@ -190,6 +197,32 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
       COMMAND_PRIORITY_HIGH,
     );
   }, [editor, showLinkDialog]);
+
+  // Track undo/redo availability so the buttons can enable/disable
+  useEffect(() => {
+    const removeCanUndoListener = editor.registerCommand(
+      CAN_UNDO_COMMAND,
+      (payload) => {
+        setCanUndo(payload);
+        return false; // Don't block other handlers
+      },
+      COMMAND_PRIORITY_LOW,
+    );
+
+    const removeCanRedoListener = editor.registerCommand(
+      CAN_REDO_COMMAND,
+      (payload) => {
+        setCanRedo(payload);
+        return false; // Don't block other handlers
+      },
+      COMMAND_PRIORITY_LOW,
+    );
+
+    return () => {
+      removeCanUndoListener();
+      removeCanRedoListener();
+    };
+  }, [editor]);
 
   // Helper function to toggle list formats
   const toggleList = useCallback(
@@ -409,6 +442,73 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
 
   return (
     <div className="editor-toolbar" role="toolbar" aria-label={t('editorToolbar')}>
+      <div className="toolbar-group">
+        <button
+          onClick={() => editor.dispatchCommand(UNDO_COMMAND, undefined)}
+          aria-label={t('undo')}
+          className="undo-button"
+          disabled={!canUndo}
+          aria-disabled={!canUndo}
+        >
+          <svg
+            className="icon-undo"
+            aria-hidden="true"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M9 14L4 9L9 4"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M4 9H15C17.7614 9 20 11.2386 20 14C20 16.7614 17.7614 19 15 19H8"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
+        <button
+          onClick={() => editor.dispatchCommand(REDO_COMMAND, undefined)}
+          aria-label={t('redo')}
+          className="redo-button"
+          disabled={!canRedo}
+          aria-disabled={!canRedo}
+        >
+          <svg
+            className="icon-redo"
+            aria-hidden="true"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M15 14L20 9L15 4"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M20 9H9C6.23858 9 4 11.2386 4 14C4 16.7614 6.23858 19 9 19H16"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
+      </div>
+
       <div className="toolbar-group">
         <button
           onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold')}
