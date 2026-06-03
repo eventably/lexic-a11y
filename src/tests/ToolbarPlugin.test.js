@@ -1,4 +1,5 @@
-import { render, screen } from '@testing-library/react';
+import { $isLinkNode } from '@lexical/link';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { I18nextProvider } from 'react-i18next';
 
@@ -25,6 +26,8 @@ jest.mock('@lexical/react/LexicalComposerContext', () => ({
 // Mock Lexical commands
 const mockAnchorNode = {
   getParent: jest.fn(() => null),
+  getURL: jest.fn(() => 'https://example.com'),
+  getTextContent: jest.fn(() => 'Example link'),
 };
 
 const mockSelection = {
@@ -77,6 +80,7 @@ jest.mock('@lexical/rich-text', () => ({
 
 jest.mock('@lexical/link', () => ({
   TOGGLE_LINK_COMMAND: 'toggle-link',
+  $isLinkNode: jest.fn(() => false),
 }));
 
 // Helper for rendering with i18n provider
@@ -191,5 +195,84 @@ describe('ToolbarPlugin Component', () => {
 
     // Verify editor state was read to get selection
     expect(mockEditor.getEditorState().read).toHaveBeenCalled();
+  });
+
+  it('opens the accessible link dialog with Ctrl+K instead of window.prompt', () => {
+    const promptSpy = jest.fn();
+    window.prompt = promptSpy;
+
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    fireEvent.keyDown(document, { key: 'k', ctrlKey: true });
+
+    expect(promptSpy).not.toHaveBeenCalled();
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByLabelText(/URL/)).toBeInTheDocument();
+  });
+
+  it('reflects cursor-in-link state on the link button via aria-pressed', () => {
+    $isLinkNode.mockReturnValue(true);
+
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    const linkButton = screen.getByLabelText('Edit Link');
+    expect(linkButton).toHaveAttribute('aria-pressed', 'true');
+
+    $isLinkNode.mockReturnValue(false);
+  });
+
+  it('pre-fills the dialog with the existing link URL and text in edit mode', async () => {
+    const user = userEvent.setup();
+    $isLinkNode.mockReturnValue(true);
+
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    await user.click(screen.getByLabelText('Edit Link'));
+
+    expect(screen.getByRole('heading', { name: 'Edit Link' })).toBeInTheDocument();
+    expect(screen.getByLabelText(/URL/)).toHaveValue('https://example.com');
+    expect(screen.getByLabelText(/Text/)).toHaveValue('Example link');
+
+    $isLinkNode.mockReturnValue(false);
+  });
+
+  it('removes an existing link via the Remove Link button', async () => {
+    const user = userEvent.setup();
+    $isLinkNode.mockReturnValue(true);
+
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    await user.click(screen.getByLabelText('Edit Link'));
+    await user.click(screen.getByRole('button', { name: 'Remove Link' }));
+
+    expect(mockEditor.dispatchCommand).toHaveBeenCalledWith('toggle-link', null);
+    // Dialog closes and focus returns to the editor
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(mockEditor.focus).toHaveBeenCalled();
+
+    $isLinkNode.mockReturnValue(false);
+  });
+
+  it('does not show Remove Link when inserting a new link', async () => {
+    const user = userEvent.setup();
+
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    await user.click(screen.getByLabelText('Link'));
+
+    expect(screen.getByRole('heading', { name: 'Insert Link' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Remove Link' })).not.toBeInTheDocument();
+  });
+
+  it('returns focus to the editor when the dialog is cancelled', async () => {
+    const user = userEvent.setup();
+
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    await user.click(screen.getByLabelText('Link'));
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(mockEditor.focus).toHaveBeenCalled();
   });
 });

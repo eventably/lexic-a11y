@@ -33,6 +33,8 @@ i18n.use(initReactI18next).init({
         enterAltText: 'Enter alt text',
         // New translations for link dialog
         insertLink: 'Insert Link',
+        editLink: 'Edit Link',
+        removeLink: 'Remove Link',
         url: 'URL',
         text: 'Text',
         linkText: 'Link Text',

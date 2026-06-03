@@ -1,5 +1,5 @@
 // ToolbarPlugin.js
-import { TOGGLE_LINK_COMMAND } from '@lexical/link';
+import { $isLinkNode, TOGGLE_LINK_COMMAND } from '@lexical/link';
 import {
   $isListItemNode,
   $isListNode,
@@ -34,6 +34,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
   const [isItalic, setIsItalic] = useState(false);
   const [isUnderline, setIsUnderline] = useState(false);
   const [isStrikethrough, setIsStrikethrough] = useState(false);
+  const [isLinkActive, setIsLinkActive] = useState(false);
   const dialogRef = useRef(null);
   const urlInputRef = useRef(null);
 
@@ -85,6 +86,55 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
     [editor],
   );
 
+  // Find the LinkNode containing a node, if any (walks up the tree)
+  const findLinkNode = (node) => {
+    let current = node;
+    let depth = 0;
+    while (current && depth < 10) {
+      if ($isLinkNode(current)) {
+        return current;
+      }
+      try {
+        current = current.getParent();
+      } catch (_e) {
+        return null;
+      }
+      depth++;
+    }
+    return null;
+  };
+
+  // Open the link dialog, pre-filled from an existing link when the
+  // cursor/selection is inside one (edit mode), or from the selected text
+  const openLinkDialog = useCallback(() => {
+    editor.getEditorState().read(() => {
+      const selection = $getSelection();
+      if ($isRangeSelection(selection)) {
+        const linkNode = findLinkNode(selection.anchor.getNode());
+        if (linkNode) {
+          // Editing an existing link: pre-fill its URL and text
+          setLinkUrl(linkNode.getURL());
+          setLinkText(linkNode.getTextContent());
+        } else {
+          const selectedText = selection.getTextContent();
+          if (selectedText) {
+            setLinkText(selectedText);
+          }
+        }
+      }
+    });
+    setShowLinkDialog(true);
+  }, [editor]);
+
+  // Remove the link at the current selection
+  const removeLink = useCallback(() => {
+    editor.dispatchCommand(TOGGLE_LINK_COMMAND, null);
+    setShowLinkDialog(false);
+    setLinkUrl('');
+    setLinkText('');
+    editor.focus();
+  }, [editor]);
+
   // Register keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -108,14 +158,12 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
             e.preventDefault();
             editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'underline');
             break;
-          case 'k': {
+          case 'k':
+            // Open the same accessible dialog as the toolbar button
+            // (replaces the old, far less accessible window.prompt)
             e.preventDefault();
-            const url = window.prompt(t('enterUrl'));
-            if (url !== null) {
-              editor.dispatchCommand(TOGGLE_LINK_COMMAND, url || null);
-            }
+            openLinkDialog();
             break;
-          }
           case 'd':
             e.preventDefault();
             setShowDocs((prevState) => !prevState);
@@ -174,7 +222,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [editor, setShowDocs, t, setHeading]);
+  }, [editor, setShowDocs, t, setHeading, openLinkDialog]);
 
   // Register Escape key to close link dialog
   useEffect(() => {
@@ -235,6 +283,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
               setIsItalic(false);
               setIsUnderline(false);
               setIsStrikethrough(false);
+              setIsLinkActive(false);
               return;
             }
 
@@ -277,6 +326,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
             let headingTag = null;
             let orderedListActive = false;
             let unorderedListActive = false;
+            let linkActive = false;
 
             try {
               // Get the anchor node safely
@@ -307,6 +357,9 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
 
               // Find headings
               headingTag = findHeadingTag(anchorNode);
+
+              // Detect whether the cursor/selection is inside a link
+              linkActive = findLinkNode(anchorNode) !== null;
 
               // Helper to safely get parent
               const getParentSafely = (node) => {
@@ -355,6 +408,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
             setActiveHeadingTag(headingTag);
             setIsOrderedListActive(orderedListActive);
             setIsUnorderedListActive(unorderedListActive);
+            setIsLinkActive(linkActive);
           } catch (_e) {
             // Reset all states if there's an error
             setActiveHeadingTag(null);
@@ -364,6 +418,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
             setIsItalic(false);
             setIsUnderline(false);
             setIsStrikethrough(false);
+            setIsLinkActive(false);
           }
         });
       } catch (_error) {
@@ -399,12 +454,17 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
 
   // Focus URL input when dialog opens
   useEffect(() => {
-    if (showLinkDialog && urlInputRef.current) {
-      // Slight delay to ensure the dialog is fully rendered
-      setTimeout(() => {
+    if (!showLinkDialog) return undefined;
+
+    // Slight delay to ensure the dialog is fully rendered; guard the ref in
+    // case the dialog was closed before the timeout fires
+    const timeoutId = setTimeout(() => {
+      if (urlInputRef.current) {
         urlInputRef.current.focus();
-      }, 50);
-    }
+      }
+    }, 50);
+
+    return () => clearTimeout(timeoutId);
   }, [showLinkDialog]);
 
   return (
@@ -603,21 +663,10 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
 
       <div className="toolbar-group">
         <button
-          className="link-button"
-          onClick={() => {
-            // Get any selected text before opening dialog
-            editor.getEditorState().read(() => {
-              const selection = $getSelection();
-              if ($isRangeSelection(selection)) {
-                const selectedText = selection.getTextContent();
-                if (selectedText) {
-                  setLinkText(selectedText);
-                }
-              }
-            });
-            setShowLinkDialog(true);
-          }}
-          aria-label={t('link')}
+          className={`link-button ${isLinkActive ? 'active' : ''}`}
+          onClick={openLinkDialog}
+          aria-label={isLinkActive ? t('editLink') : t('link')}
+          aria-pressed={isLinkActive ? true : false}
         >
           <svg
             className="icon-link"
@@ -793,7 +842,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
             aria-labelledby="link-dialog-title"
             tabIndex={-1}
           >
-            <h3 id="link-dialog-title">{t('insertLink')}</h3>
+            <h3 id="link-dialog-title">{isLinkActive ? t('editLink') : t('insertLink')}</h3>
             <div className="link-dialog-form">
               <div className="form-group">
                 <label htmlFor="link-url">{t('url')}:</label>
@@ -820,11 +869,18 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
               </div>
 
               <div className="link-dialog-buttons">
+                {isLinkActive ? (
+                  <button type="button" className="remove-link-button" onClick={removeLink}>
+                    {t('removeLink')}
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   className="cancel-button"
                   onClick={() => {
                     setShowLinkDialog(false);
+                    // Return focus to the editor when the dialog closes
+                    editor.focus();
                     setTimeout(() => {
                       setLinkUrl('');
                       setLinkText('');
