@@ -1,1 +1,9 @@
 npm run check
+
+if command -v lychee >/dev/null 2>&1; then
+  # Non-blocking: report broken Markdown links but never block the push.
+  # External link rot and rate-limit backoffs are outside the repo's control.
+  npm run links || echo "warning: lychee reported broken links (non-blocking) — review output above."
+else
+  echo "warning: lychee not installed — skipping Markdown link check. Install with 'brew install lychee'."
+fi
