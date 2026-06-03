@@ -8,6 +8,7 @@ import {
   REMOVE_LIST_COMMAND,
 } from '@lexical/list';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
+import { INSERT_HORIZONTAL_RULE_COMMAND } from '@lexical/react/LexicalHorizontalRuleNode';
 import { $createHeadingNode, $isHeadingNode } from '@lexical/rich-text';
 import { $setBlocksType } from '@lexical/selection';
 import {
@@ -742,6 +743,26 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
               strokeWidth="2"
               strokeLinecap="round"
             />
+          </svg>
+        </button>
+      </div>
+
+      <div className="toolbar-group">
+        <button
+          onClick={() => editor.dispatchCommand(INSERT_HORIZONTAL_RULE_COMMAND, undefined)}
+          aria-label={t('insertHorizontalRule')}
+          className="horizontal-rule-button"
+        >
+          <svg
+            className="icon-horizontal-rule"
+            aria-hidden="true"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path d="M3 12H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
           </svg>
         </button>
       </div>

@@ -6,6 +6,8 @@ import { LexicalComposer } from '@lexical/react/LexicalComposer';
 import { ContentEditable } from '@lexical/react/LexicalContentEditable';
 import LexicalErrorBoundary from '@lexical/react/LexicalErrorBoundary';
 import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
+import { HorizontalRuleNode } from '@lexical/react/LexicalHorizontalRuleNode';
+import { HorizontalRulePlugin } from '@lexical/react/LexicalHorizontalRulePlugin';
 import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin';
 import { ListPlugin } from '@lexical/react/LexicalListPlugin';
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
@@ -16,7 +18,6 @@ import { useState } from 'react';
 import { ToolbarPlugin } from './ToolbarPlugin';
 // Temporarily comment out missing imports
 // import { ImageNode } from '@lexical/image';
-// import { HorizontalRuleNode } from '@lexical/react/LexicalHorizontalRuleNode';
 
 const theme = {
   text: {
@@ -58,8 +59,8 @@ const editorConfig = {
     ListItemNode,
     QuoteNode,
     LinkNode,
+    HorizontalRuleNode,
     // ImageNode,
-    // HorizontalRuleNode,
   ],
 };
 
@@ -79,6 +80,7 @@ export default function Editor({ onContentChange }) {
             ErrorBoundary={LexicalErrorBoundary}
           />
           <HistoryPlugin />
+          <HorizontalRulePlugin />
           <LinkPlugin />
           <ListPlugin />
           <OnChangePlugin
@@ -90,7 +92,7 @@ export default function Editor({ onContentChange }) {
                 // Use a simple regex to clean up the utility classes
                 const cleanHtml = htmlString
                   .replace(/class="[^"]*"/g, '') // Remove all class attributes
-                  .replace(/<(h[1-6]|p|ul|ol|li)([^>]*)>/g, '<$1>') // Clean heading, paragraph, and list tags
+                  .replace(/<(h[1-6]|p|ul|ol|li|hr)([^>]*)>/g, '<$1>') // Clean heading, paragraph, list, and hr tags
                   .replace(/<a([^>]*)(class="[^"]*")([^>]*)>/g, '<a$1$3>'); // Clean link tags
 
                 setHtmlOutput(cleanHtml);

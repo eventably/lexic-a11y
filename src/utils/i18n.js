@@ -17,6 +17,7 @@ i18n.use(initReactI18next).init({
         heading5: 'H5',
         heading6: 'H6',
         horizontalRule: 'HR',
+        insertHorizontalRule: 'Insert Horizontal Rule',
         link: 'Link',
         uploadImage: 'Upload Image',
         insertImage: 'Insert Image',
