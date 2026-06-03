@@ -50,8 +50,16 @@ We adopt the tooling listed in issue #14 with the following scope constraints:
 - ESLint flat config pulls in sonarjs, security, unicorn, import-x, promise, n,
   jsdoc, and no-secrets on top of the existing React and a11y plugins.
 - Husky gates are layered: `pre-commit` (lint-staged + gitleaks), `commit-msg`
-  (commitlint), `pre-push` (`npm run check`), `post-merge` (audit on lockfile
-  change).
+  (commitlint), `pre-push` (`npm run check` + `lychee` Markdown link check),
+  `post-merge` (audit on lockfile change).
+- **Markdown link checking (`lychee`) runs locally at `pre-push`**, not as a
+  scheduled GitHub Action. This keeps the feedback loop local (the issue's
+  preference for Husky gates over Actions minutes) and surfaces broken links
+  before a PR is opened. The check is **non-blocking and bounded**
+  (`--max-retries 0 --timeout 10`, failure does not abort the push): external
+  link rot and host rate-limit backoffs are outside the repo's control and must
+  not be able to hang or block a developer's push. The hook also degrades
+  gracefully when `lychee` is not installed.
 - `size-limit` budgets (100 KB brotlied) enforce bundle discipline.
 - License compliance via `license-checker-rseidelsohn` with an allowlist.
 
