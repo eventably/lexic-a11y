@@ -67,6 +67,10 @@ jest.mock('@lexical/html', () => ({
   $generateHtmlFromNodes: () => '<p>Test HTML Output</p>',
 }));
 
+jest.mock('../components/WordCountPlugin', () => ({
+  WordCountPlugin: () => <div data-testid="word-count-plugin" />,
+}));
+
 // Mock ToolbarPlugin to expose setShowDocs trigger
 jest.mock('../components/ToolbarPlugin', () => ({
   ToolbarPlugin: ({ setShowDocs }) => (
@@ -101,6 +105,7 @@ describe('Editor Component', () => {
     expect(screen.getByTestId('link-plugin')).toBeInTheDocument();
     expect(screen.getByTestId('list-plugin')).toBeInTheDocument();
     expect(screen.getByTestId('on-change-plugin')).toBeInTheDocument();
+    expect(screen.getByTestId('word-count-plugin')).toBeInTheDocument();
   });
 
   it('does not show docs overlay by default', () => {

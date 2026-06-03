@@ -38,6 +38,11 @@ i18n.use(initReactI18next).init({
         linkText: 'Link Text',
         cancel: 'Cancel',
         insert: 'Insert',
+        // Live word/character count
+        wordCount_one: '{{count}} word',
+        wordCount_other: '{{count}} words',
+        charCount_one: '{{count}} character',
+        charCount_other: '{{count}} characters',
       },
     },
     // Additional languages can be added here.

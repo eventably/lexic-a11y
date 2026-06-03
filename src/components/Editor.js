@@ -14,6 +14,7 @@ import { HeadingNode, QuoteNode } from '@lexical/rich-text';
 import { useState } from 'react';
 
 import { ToolbarPlugin } from './ToolbarPlugin';
+import { WordCountPlugin } from './WordCountPlugin';
 // Temporarily comment out missing imports
 // import { ImageNode } from '@lexical/image';
 // import { HorizontalRuleNode } from '@lexical/react/LexicalHorizontalRuleNode';
@@ -99,6 +100,7 @@ export default function Editor({ onContentChange }) {
             }}
           />
         </div>
+        <WordCountPlugin />
       </div>
 
       {showDocs ? (
