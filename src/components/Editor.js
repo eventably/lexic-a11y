@@ -8,10 +8,13 @@ import LexicalErrorBoundary from '@lexical/react/LexicalErrorBoundary';
 import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
 import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin';
 import { ListPlugin } from '@lexical/react/LexicalListPlugin';
+import { MarkdownShortcutPlugin } from '@lexical/react/LexicalMarkdownShortcutPlugin';
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
 import { HeadingNode, QuoteNode } from '@lexical/rich-text';
 import { useState } from 'react';
+
+import { EDITOR_TRANSFORMERS } from '../utils/markdown-transformers';
 
 import { ToolbarPlugin } from './ToolbarPlugin';
 // Temporarily comment out missing imports
@@ -81,6 +84,7 @@ export default function Editor({ onContentChange }) {
           <HistoryPlugin />
           <LinkPlugin />
           <ListPlugin />
+          <MarkdownShortcutPlugin transformers={EDITOR_TRANSFORMERS} />
           <OnChangePlugin
             onChange={(editorState, editor) => {
               editorState.read(() => {
