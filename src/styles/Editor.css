@@ -444,6 +444,17 @@ kbd {
   }
 }
 
+@media screen and (prefers-reduced-motion: reduce) {
+  .cancel-button,
+  .insert-button {
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: none;
+  }
+}
+
 .cancel-button,
 .insert-button {
   padding: 8px 16px;
@@ -515,4 +526,22 @@ kbd {
   font-size: 14px;
   border: 1px solid var(--border-color);
   line-height: 1.5;
+}
+
+.editor-text-code {
+  font-family: SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+  background-color: #f1f3f5;
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.editor-code-block {
+  display: block;
+  font-family: SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+  background-color: #f8f9fa;
+  padding: 12px 16px;
+  margin: 8px 0;
+  border: 1px solid var(--border-color);
+  overflow-x: auto;
+  white-space: pre;
 }

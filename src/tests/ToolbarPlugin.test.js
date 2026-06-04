@@ -1,5 +1,8 @@
+import { $createCodeNode, $isCodeNode } from '@lexical/code';
+import { $setBlocksType } from '@lexical/selection';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { $createParagraphNode } from 'lexical';
 import { I18nextProvider } from 'react-i18next';
 
 import { ToolbarPlugin } from '../components/ToolbarPlugin';
@@ -77,6 +80,11 @@ jest.mock('@lexical/rich-text', () => ({
 
 jest.mock('@lexical/link', () => ({
   TOGGLE_LINK_COMMAND: 'toggle-link',
+}));
+
+jest.mock('@lexical/code', () => ({
+  $createCodeNode: jest.fn(() => ({})),
+  $isCodeNode: jest.fn(() => false),
 }));
 
 // Helper for rendering with i18n provider
@@ -161,6 +169,70 @@ describe('ToolbarPlugin Component', () => {
     await user.click(h1Button);
 
     expect(mockEditor.update).toHaveBeenCalled();
+  });
+
+  it('renders inline code and code block buttons with aria-pressed state', () => {
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    const inlineCodeButton = screen.getByLabelText('Inline Code');
+    const codeBlockButton = screen.getByLabelText('Code Block');
+
+    expect(inlineCodeButton).toBeInTheDocument();
+    expect(codeBlockButton).toBeInTheDocument();
+    expect(inlineCodeButton).toHaveAttribute('aria-pressed', 'false');
+    expect(codeBlockButton).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('dispatches the code text format when inline code button is clicked', async () => {
+    const user = userEvent.setup();
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    await user.click(screen.getByLabelText('Inline Code'));
+
+    expect(mockEditor.dispatchCommand).toHaveBeenCalledWith('format-text', 'code');
+  });
+
+  it('applies a code block via $setBlocksType when not already in one', async () => {
+    const user = userEvent.setup();
+    $setBlocksType.mockClear();
+    $createCodeNode.mockClear();
+    $isCodeNode.mockReturnValue(false);
+
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+    await user.click(screen.getByLabelText('Code Block'));
+
+    expect($setBlocksType).toHaveBeenCalled();
+    // The block creator passed to $setBlocksType must produce a code node
+    const creator = $setBlocksType.mock.calls[$setBlocksType.mock.calls.length - 1][1];
+    creator();
+    expect($createCodeNode).toHaveBeenCalled();
+  });
+
+  it('converts back to a paragraph when the selection is already a code block', async () => {
+    const user = userEvent.setup();
+    $setBlocksType.mockClear();
+    $createParagraphNode.mockClear();
+    $isCodeNode.mockReturnValue(true);
+
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+    await user.click(screen.getByLabelText('Code Block'));
+
+    expect($setBlocksType).toHaveBeenCalled();
+    const creator = $setBlocksType.mock.calls[$setBlocksType.mock.calls.length - 1][1];
+    creator();
+    expect($createParagraphNode).toHaveBeenCalled();
+
+    $isCodeNode.mockReturnValue(false);
+  });
+
+  it('reflects inline code active state from the selection format', () => {
+    mockSelection.hasFormat.mockImplementation((format) => format === 'code');
+
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    expect(screen.getByLabelText('Inline Code')).toHaveAttribute('aria-pressed', 'true');
+
+    mockSelection.hasFormat.mockImplementation(() => false);
   });
 
   it('registers escape key command handler', () => {

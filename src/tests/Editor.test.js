@@ -11,6 +11,11 @@ jest.mock('@lexical/rich-text', () => ({
   QuoteNode: class QuoteNode {},
 }));
 
+jest.mock('@lexical/code', () => ({
+  CodeNode: class CodeNode {},
+  CodeHighlightNode: class CodeHighlightNode {},
+}));
+
 jest.mock('@lexical/list', () => ({
   ListNode: class ListNode {},
   ListItemNode: class ListItemNode {},
