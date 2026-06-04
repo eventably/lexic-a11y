@@ -20,6 +20,16 @@ jest.mock('@lexical/link', () => ({
   LinkNode: class LinkNode {},
 }));
 
+jest.mock('@lexical/table', () => ({
+  TableNode: class TableNode {},
+  TableRowNode: class TableRowNode {},
+  TableCellNode: class TableCellNode {},
+}));
+
+jest.mock('@lexical/react/LexicalTablePlugin', () => ({
+  TablePlugin: () => <div data-testid="table-plugin" />,
+}));
+
 // Mock the Lexical components and plugins
 jest.mock('@lexical/react/LexicalComposerContext', () => ({
   useLexicalComposerContext: jest.fn(() => [{ update: jest.fn() }]),
@@ -46,8 +56,13 @@ jest.mock('@lexical/react/LexicalHistoryPlugin', () => ({
   HistoryPlugin: () => <div data-testid="history-plugin" />,
 }));
 
+// Capture the OnChangePlugin onChange prop so tests can exercise the export path
+const mockOnChangeCapture = {};
 jest.mock('@lexical/react/LexicalOnChangePlugin', () => ({
-  OnChangePlugin: () => <div data-testid="on-change-plugin" />,
+  OnChangePlugin: ({ onChange }) => {
+    mockOnChangeCapture.onChange = onChange;
+    return <div data-testid="on-change-plugin" />;
+  },
 }));
 
 jest.mock('@lexical/react/LexicalErrorBoundary', () => ({
@@ -64,7 +79,7 @@ jest.mock('@lexical/react/LexicalListPlugin', () => ({
 }));
 
 jest.mock('@lexical/html', () => ({
-  $generateHtmlFromNodes: () => '<p>Test HTML Output</p>',
+  $generateHtmlFromNodes: jest.fn(() => '<p>Test HTML Output</p>'),
 }));
 
 // Mock ToolbarPlugin to expose setShowDocs trigger
@@ -101,6 +116,23 @@ describe('Editor Component', () => {
     expect(screen.getByTestId('link-plugin')).toBeInTheDocument();
     expect(screen.getByTestId('list-plugin')).toBeInTheDocument();
     expect(screen.getByTestId('on-change-plugin')).toBeInTheDocument();
+    expect(screen.getByTestId('table-plugin')).toBeInTheDocument();
+  });
+
+  it('exports clean, semantic table HTML with scoped header cells', () => {
+    const { $generateHtmlFromNodes } = require('@lexical/html');
+    const mockOnContentChange = jest.fn();
+    renderWithI18n(<Editor onContentChange={mockOnContentChange} />);
+
+    // Simulate Lexical emitting a themed table
+    $generateHtmlFromNodes.mockReturnValueOnce(
+      '<table class="min-w-full"><tbody class="x"><tr class="y"><th style="width:75px" class="z">Name</th><th>Role</th></tr><tr><td style="width:75px">Ada</td><td>Engineer</td></tr></tbody></table>',
+    );
+    mockOnChangeCapture.onChange({ read: (cb) => cb() }, {});
+
+    expect(mockOnContentChange).toHaveBeenCalledWith(
+      '<table><tbody><tr><th scope="col">Name</th><th scope="col">Role</th></tr><tr><td>Ada</td><td>Engineer</td></tr></tbody></table>',
+    );
   });
 
   it('does not show docs overlay by default', () => {

@@ -10,7 +10,9 @@ import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin';
 import { ListPlugin } from '@lexical/react/LexicalListPlugin';
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
+import { TablePlugin } from '@lexical/react/LexicalTablePlugin';
 import { HeadingNode, QuoteNode } from '@lexical/rich-text';
+import { TableCellNode, TableNode, TableRowNode } from '@lexical/table';
 import { useState } from 'react';
 
 import { ToolbarPlugin } from './ToolbarPlugin';
@@ -58,6 +60,9 @@ const editorConfig = {
     ListItemNode,
     QuoteNode,
     LinkNode,
+    TableNode,
+    TableRowNode,
+    TableCellNode,
     // ImageNode,
     // HorizontalRuleNode,
   ],
@@ -81,6 +86,7 @@ export default function Editor({ onContentChange }) {
           <HistoryPlugin />
           <LinkPlugin />
           <ListPlugin />
+          <TablePlugin />
           <OnChangePlugin
             onChange={(editorState, editor) => {
               editorState.read(() => {
@@ -91,7 +97,11 @@ export default function Editor({ onContentChange }) {
                 const cleanHtml = htmlString
                   .replace(/class="[^"]*"/g, '') // Remove all class attributes
                   .replace(/<(h[1-6]|p|ul|ol|li)([^>]*)>/g, '<$1>') // Clean heading, paragraph, and list tags
-                  .replace(/<a([^>]*)(class="[^"]*")([^>]*)>/g, '<a$1$3>'); // Clean link tags
+                  .replace(/<a([^>]*)(class="[^"]*")([^>]*)>/g, '<a$1$3>') // Clean link tags
+                  .replace(/<(table|thead|tbody|tr)([^>]*)>/g, '<$1>') // Clean table structure tags
+                  .replace(/<(td|th)\s+style="[^"]*"([^>]*)>/g, '<$1$2>') // Strip inline cell styles
+                  .replace(/<(td|th)\s+>/g, '<$1>') // Tidy whitespace left by attribute stripping
+                  .replace(/<th(?![^>]*\bscope=)([^>]*)>/g, '<th scope="col"$1>'); // Ensure header cells carry scope
 
                 setHtmlOutput(cleanHtml);
                 onContentChange(cleanHtml);

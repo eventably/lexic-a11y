@@ -10,6 +10,7 @@ import {
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { $createHeadingNode, $isHeadingNode } from '@lexical/rich-text';
 import { $setBlocksType } from '@lexical/selection';
+import { INSERT_TABLE_COMMAND } from '@lexical/table';
 import {
   $createParagraphNode,
   $getSelection,
@@ -34,8 +35,41 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
   const [isItalic, setIsItalic] = useState(false);
   const [isUnderline, setIsUnderline] = useState(false);
   const [isStrikethrough, setIsStrikethrough] = useState(false);
+  const [showTableDialog, setShowTableDialog] = useState(false);
+  const [tableRows, setTableRows] = useState('3');
+  const [tableColumns, setTableColumns] = useState('3');
+  const [tableHeaders, setTableHeaders] = useState(true);
   const dialogRef = useRef(null);
   const urlInputRef = useRef(null);
+  const tableRowsInputRef = useRef(null);
+
+  const closeTableDialog = useCallback(() => {
+    setShowTableDialog(false);
+    setTableRows('3');
+    setTableColumns('3');
+    setTableHeaders(true);
+  }, []);
+
+  // Rows/columns must be positive integers within a sane bound
+  const isValidTableSize = (value) => {
+    const parsed = Number.parseInt(value, 10);
+    return Number.isInteger(parsed) && parsed >= 1 && parsed <= 20;
+  };
+  const canInsertTable = isValidTableSize(tableRows) && isValidTableSize(tableColumns);
+
+  const insertTable = useCallback(() => {
+    if (!canInsertTable) return;
+    setShowTableDialog(false);
+    editor.focus();
+    editor.dispatchCommand(INSERT_TABLE_COMMAND, {
+      rows: String(Number.parseInt(tableRows, 10)),
+      columns: String(Number.parseInt(tableColumns, 10)),
+      includeHeaders: tableHeaders,
+    });
+    setTableRows('3');
+    setTableColumns('3');
+    setTableHeaders(true);
+  }, [canInsertTable, editor, tableRows, tableColumns, tableHeaders]);
 
   // Helper to apply heading formatting with toggle functionality
   const setHeading = useCallback(
@@ -185,11 +219,15 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
           setShowLinkDialog(false);
           return true;
         }
+        if (showTableDialog) {
+          closeTableDialog();
+          return true;
+        }
         return false;
       },
       COMMAND_PRIORITY_HIGH,
     );
-  }, [editor, showLinkDialog]);
+  }, [editor, showLinkDialog, showTableDialog, closeTableDialog]);
 
   // Helper function to toggle list formats
   const toggleList = useCallback(
@@ -406,6 +444,17 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
       }, 50);
     }
   }, [showLinkDialog]);
+
+  // Focus the rows input when the table dialog opens
+  useEffect(() => {
+    if (!showTableDialog) return undefined;
+    const timeoutId = setTimeout(() => {
+      if (tableRowsInputRef.current) {
+        tableRowsInputRef.current.focus();
+      }
+    }, 50);
+    return () => clearTimeout(timeoutId);
+  }, [showTableDialog]);
 
   return (
     <div className="editor-toolbar" role="toolbar" aria-label={t('editorToolbar')}>
@@ -644,6 +693,26 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
           </svg>
           <span className="button-text">{t('link')}</span>
         </button>
+        <button
+          className="table-button"
+          onClick={() => setShowTableDialog(true)}
+          aria-label={t('insertTable')}
+        >
+          <svg
+            className="icon-table"
+            aria-hidden="true"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <rect x="3" y="4" width="18" height="16" rx="1" stroke="currentColor" strokeWidth="2" />
+            <path d="M3 10H21" stroke="currentColor" strokeWidth="2" />
+            <path d="M9 10V20" stroke="currentColor" strokeWidth="2" />
+            <path d="M15 10V20" stroke="currentColor" strokeWidth="2" />
+          </svg>
+        </button>
       </div>
 
       <div className="toolbar-group">
@@ -878,6 +947,88 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
                     }
                   }}
                   disabled={!linkUrl}
+                >
+                  {t('insert')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {showTableDialog ? (
+        <div
+          className="link-dialog-overlay"
+          onClick={(e) => {
+            // Only close when the backdrop itself is clicked
+            if (e.target === e.currentTarget) {
+              closeTableDialog();
+            }
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              closeTableDialog();
+            }
+          }}
+          role="presentation"
+        >
+          <div
+            className="link-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="table-dialog-title"
+            tabIndex={-1}
+          >
+            <h3 id="table-dialog-title">{t('insertTable')}</h3>
+            <div className="link-dialog-form">
+              <div className="form-group">
+                <label htmlFor="table-rows">{t('tableRows')}:</label>
+                <input
+                  ref={tableRowsInputRef}
+                  type="number"
+                  id="table-rows"
+                  min="1"
+                  max="20"
+                  value={tableRows}
+                  onChange={(e) => setTableRows(e.target.value)}
+                  aria-required="true"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="table-columns">{t('tableColumns')}:</label>
+                <input
+                  type="number"
+                  id="table-columns"
+                  min="1"
+                  max="20"
+                  value={tableColumns}
+                  onChange={(e) => setTableColumns(e.target.value)}
+                  aria-required="true"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="table-headers">
+                  <input
+                    type="checkbox"
+                    id="table-headers"
+                    checked={tableHeaders}
+                    onChange={(e) => setTableHeaders(e.target.checked)}
+                  />{' '}
+                  {t('includeHeaderRow')}
+                </label>
+              </div>
+
+              <div className="link-dialog-buttons">
+                <button type="button" className="cancel-button" onClick={closeTableDialog}>
+                  {t('cancel')}
+                </button>
+                <button
+                  type="button"
+                  className="insert-button"
+                  onClick={insertTable}
+                  disabled={!canInsertTable}
                 >
                   {t('insert')}
                 </button>

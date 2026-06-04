@@ -79,6 +79,10 @@ jest.mock('@lexical/link', () => ({
   TOGGLE_LINK_COMMAND: 'toggle-link',
 }));
 
+jest.mock('@lexical/table', () => ({
+  INSERT_TABLE_COMMAND: 'insert-table',
+}));
+
 // Helper for rendering with i18n provider
 const renderWithI18n = (component) => {
   return render(<I18nextProvider i18n={i18n}>{component}</I18nextProvider>);
@@ -161,6 +165,81 @@ describe('ToolbarPlugin Component', () => {
     await user.click(h1Button);
 
     expect(mockEditor.update).toHaveBeenCalled();
+  });
+
+  describe('table insertion', () => {
+    it('opens the table dialog with accessible defaults', async () => {
+      const user = userEvent.setup();
+      renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+      await user.click(screen.getByLabelText('Insert Table'));
+
+      expect(screen.getByRole('dialog', { name: 'Insert Table' })).toBeInTheDocument();
+      expect(screen.getByLabelText(/Rows/)).toHaveValue(3);
+      expect(screen.getByLabelText(/Columns/)).toHaveValue(3);
+      // Header row on by default for accessible tables
+      expect(screen.getByLabelText(/Include header row/)).toBeChecked();
+    });
+
+    it('dispatches INSERT_TABLE_COMMAND with rows, columns, and headers', async () => {
+      const user = userEvent.setup();
+      renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+      await user.click(screen.getByLabelText('Insert Table'));
+      await user.click(screen.getByRole('button', { name: 'Insert' }));
+
+      expect(mockEditor.dispatchCommand).toHaveBeenCalledWith('insert-table', {
+        rows: '3',
+        columns: '3',
+        includeHeaders: true,
+      });
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+
+    it('respects custom dimensions and header choice', async () => {
+      const user = userEvent.setup();
+      renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+      await user.click(screen.getByLabelText('Insert Table'));
+      const rowsInput = screen.getByLabelText(/Rows/);
+      const columnsInput = screen.getByLabelText(/Columns/);
+      await user.clear(rowsInput);
+      await user.type(rowsInput, '2');
+      await user.clear(columnsInput);
+      await user.type(columnsInput, '5');
+      await user.click(screen.getByLabelText(/Include header row/));
+      await user.click(screen.getByRole('button', { name: 'Insert' }));
+
+      expect(mockEditor.dispatchCommand).toHaveBeenCalledWith('insert-table', {
+        rows: '2',
+        columns: '5',
+        includeHeaders: false,
+      });
+    });
+
+    it('disables Insert for invalid dimensions', async () => {
+      const user = userEvent.setup();
+      renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+      await user.click(screen.getByLabelText('Insert Table'));
+      await user.clear(screen.getByLabelText(/Rows/));
+
+      expect(screen.getByRole('button', { name: 'Insert' })).toBeDisabled();
+    });
+
+    it('cancels without inserting', async () => {
+      const user = userEvent.setup();
+      renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+      await user.click(screen.getByLabelText('Insert Table'));
+      await user.click(screen.getByRole('button', { name: 'Cancel' }));
+
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(mockEditor.dispatchCommand).not.toHaveBeenCalledWith(
+        'insert-table',
+        expect.anything(),
+      );
+    });
   });
 
   it('registers escape key command handler', () => {
