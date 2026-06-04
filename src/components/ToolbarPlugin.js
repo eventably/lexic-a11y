@@ -13,6 +13,7 @@ import { $setBlocksType } from '@lexical/selection';
 import {
   $createParagraphNode,
   $getSelection,
+  $insertNodes,
   $isRangeSelection,
   COMMAND_PRIORITY_HIGH,
   FORMAT_TEXT_COMMAND,
@@ -20,6 +21,8 @@ import {
 } from 'lexical';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
+import { $createImageNode } from './ImageNode';
 
 export function ToolbarPlugin({ showDocs, setShowDocs }) {
   const [editor] = useLexicalComposerContext();
@@ -34,8 +37,44 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
   const [isItalic, setIsItalic] = useState(false);
   const [isUnderline, setIsUnderline] = useState(false);
   const [isStrikethrough, setIsStrikethrough] = useState(false);
+  const [showImageDialog, setShowImageDialog] = useState(false);
+  const [imageUrl, setImageUrl] = useState('');
+  const [imageAlt, setImageAlt] = useState('');
+  const [imageDecorative, setImageDecorative] = useState(false);
   const dialogRef = useRef(null);
   const urlInputRef = useRef(null);
+  const imageUrlInputRef = useRef(null);
+
+  // Alt text is required unless the image is explicitly marked decorative
+  const canInsertImage = Boolean(imageUrl && (imageAlt.trim() !== '' || imageDecorative));
+
+  const closeImageDialog = useCallback(() => {
+    setShowImageDialog(false);
+    setImageUrl('');
+    setImageAlt('');
+    setImageDecorative(false);
+  }, []);
+
+  const insertImage = useCallback(() => {
+    if (!canInsertImage) return;
+    setShowImageDialog(false);
+    editor.focus();
+    editor.update(() => {
+      try {
+        const imageNode = $createImageNode({
+          src: imageUrl,
+          alt: imageDecorative ? '' : imageAlt.trim(),
+          decorative: imageDecorative,
+        });
+        $insertNodes([imageNode]);
+      } catch (error) {
+        console.error('Error inserting image:', error);
+      }
+    });
+    setImageUrl('');
+    setImageAlt('');
+    setImageDecorative(false);
+  }, [canInsertImage, editor, imageUrl, imageAlt, imageDecorative]);
 
   // Helper to apply heading formatting with toggle functionality
   const setHeading = useCallback(
@@ -185,11 +224,15 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
           setShowLinkDialog(false);
           return true;
         }
+        if (showImageDialog) {
+          closeImageDialog();
+          return true;
+        }
         return false;
       },
       COMMAND_PRIORITY_HIGH,
     );
-  }, [editor, showLinkDialog]);
+  }, [editor, showLinkDialog, showImageDialog, closeImageDialog]);
 
   // Helper function to toggle list formats
   const toggleList = useCallback(
@@ -406,6 +449,17 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
       }, 50);
     }
   }, [showLinkDialog]);
+
+  // Focus image URL input when the image dialog opens
+  useEffect(() => {
+    if (!showImageDialog) return undefined;
+    const timeoutId = setTimeout(() => {
+      if (imageUrlInputRef.current) {
+        imageUrlInputRef.current.focus();
+      }
+    }, 50);
+    return () => clearTimeout(timeoutId);
+  }, [showImageDialog]);
 
   return (
     <div className="editor-toolbar" role="toolbar" aria-label={t('editorToolbar')}>
@@ -644,6 +698,31 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
           </svg>
           <span className="button-text">{t('link')}</span>
         </button>
+        <button
+          className="image-button"
+          onClick={() => setShowImageDialog(true)}
+          aria-label={t('insertImage')}
+        >
+          <svg
+            className="icon-image"
+            aria-hidden="true"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <rect x="3" y="4" width="18" height="16" rx="2" stroke="currentColor" strokeWidth="2" />
+            <circle cx="8.5" cy="9.5" r="1.5" fill="currentColor" />
+            <path
+              d="M21 15L16 10L5 20"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
       </div>
 
       <div className="toolbar-group">
@@ -878,6 +957,91 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
                     }
                   }}
                   disabled={!linkUrl}
+                >
+                  {t('insert')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {showImageDialog ? (
+        <div
+          className="link-dialog-overlay"
+          onClick={(e) => {
+            // Only close when the backdrop itself is clicked
+            if (e.target === e.currentTarget) {
+              closeImageDialog();
+            }
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              closeImageDialog();
+            }
+          }}
+          role="presentation"
+        >
+          <div
+            className="link-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="image-dialog-title"
+            tabIndex={-1}
+          >
+            <h3 id="image-dialog-title">{t('insertImage')}</h3>
+            <div className="link-dialog-form">
+              <div className="form-group">
+                <label htmlFor="image-url">{t('url')}:</label>
+                <input
+                  ref={imageUrlInputRef}
+                  type="text"
+                  id="image-url"
+                  value={imageUrl}
+                  onChange={(e) => setImageUrl(e.target.value)}
+                  placeholder="https://example.com/image.png"
+                  aria-required="true"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="image-alt">{t('altText')}:</label>
+                <input
+                  type="text"
+                  id="image-alt"
+                  value={imageAlt}
+                  onChange={(e) => setImageAlt(e.target.value)}
+                  placeholder={t('enterAltText')}
+                  disabled={imageDecorative}
+                  aria-required={!imageDecorative}
+                  aria-describedby="image-alt-hint"
+                />
+                <p id="image-alt-hint" className="form-hint">
+                  {t('altTextHint')}
+                </p>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="image-decorative">
+                  <input
+                    type="checkbox"
+                    id="image-decorative"
+                    checked={imageDecorative}
+                    onChange={(e) => setImageDecorative(e.target.checked)}
+                  />{' '}
+                  {t('decorativeImage')}
+                </label>
+              </div>
+
+              <div className="link-dialog-buttons">
+                <button type="button" className="cancel-button" onClick={closeImageDialog}>
+                  {t('cancel')}
+                </button>
+                <button
+                  type="button"
+                  className="insert-button"
+                  onClick={insertImage}
+                  disabled={!canInsertImage}
                 >
                   {t('insert')}
                 </button>

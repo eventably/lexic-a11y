@@ -67,6 +67,10 @@ jest.mock('@lexical/html', () => ({
   $generateHtmlFromNodes: () => '<p>Test HTML Output</p>',
 }));
 
+jest.mock('../components/ImageNode', () => ({
+  ImageNode: class ImageNode {},
+}));
+
 // Mock ToolbarPlugin to expose setShowDocs trigger
 jest.mock('../components/ToolbarPlugin', () => ({
   ToolbarPlugin: ({ setShowDocs }) => (

@@ -13,9 +13,9 @@ import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
 import { HeadingNode, QuoteNode } from '@lexical/rich-text';
 import { useState } from 'react';
 
+import { ImageNode } from './ImageNode';
 import { ToolbarPlugin } from './ToolbarPlugin';
 // Temporarily comment out missing imports
-// import { ImageNode } from '@lexical/image';
 // import { HorizontalRuleNode } from '@lexical/react/LexicalHorizontalRuleNode';
 
 const theme = {
@@ -58,7 +58,7 @@ const editorConfig = {
     ListItemNode,
     QuoteNode,
     LinkNode,
-    // ImageNode,
+    ImageNode,
     // HorizontalRuleNode,
   ],
 };

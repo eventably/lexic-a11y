@@ -31,6 +31,9 @@ i18n.use(initReactI18next).init({
         enterUrl: 'Enter URL',
         enterImageUrl: 'Enter image URL',
         enterAltText: 'Enter alt text',
+        altText: 'Alt Text',
+        altTextHint: 'Describe the image for screen reader users, or mark it as decorative.',
+        decorativeImage: 'This image is decorative (no alt text needed)',
         // New translations for link dialog
         insertLink: 'Insert Link',
         url: 'URL',
