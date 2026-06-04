@@ -13,6 +13,7 @@ import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
 import { HeadingNode, QuoteNode } from '@lexical/rich-text';
 import { useState } from 'react';
 
+import { PastePlugin } from './PastePlugin';
 import { ToolbarPlugin } from './ToolbarPlugin';
 // Temporarily comment out missing imports
 // import { ImageNode } from '@lexical/image';
@@ -81,6 +82,7 @@ export default function Editor({ onContentChange }) {
           <HistoryPlugin />
           <LinkPlugin />
           <ListPlugin />
+          <PastePlugin />
           <OnChangePlugin
             onChange={(editorState, editor) => {
               editorState.read(() => {
@@ -151,6 +153,9 @@ export default function Editor({ onContentChange }) {
                 </li>
                 <li>
                   <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>6</kbd>: Heading 6
+                </li>
+                <li>
+                  <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>V</kbd>: Paste as plain text
                 </li>
                 <li>
                   <kbd>Esc</kbd>: Exit editor focus
