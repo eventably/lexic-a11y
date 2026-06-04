@@ -36,6 +36,70 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
   const [isStrikethrough, setIsStrikethrough] = useState(false);
   const dialogRef = useRef(null);
   const urlInputRef = useRef(null);
+  const toolbarRef = useRef(null);
+  const rovingIndexRef = useRef(0);
+
+  // All focusable toolbar controls, in DOM order (excludes dialog controls)
+  const getToolbarButtons = useCallback(() => {
+    if (!toolbarRef.current) return [];
+    return Array.from(toolbarRef.current.querySelectorAll('.toolbar-group > button')).filter(
+      (button) => !button.disabled,
+    );
+  }, []);
+
+  // WAI-ARIA toolbar pattern: a single tab stop with a roving tabindex.
+  // Exactly one control keeps tabindex="0"; the rest get tabindex="-1".
+  const applyRovingTabIndex = useCallback(() => {
+    const buttons = getToolbarButtons();
+    if (buttons.length === 0) return;
+    if (rovingIndexRef.current >= buttons.length) {
+      rovingIndexRef.current = 0;
+    }
+    buttons.forEach((button, index) => {
+      button.tabIndex = index === rovingIndexRef.current ? 0 : -1;
+    });
+  }, [getToolbarButtons]);
+
+  // Re-apply after every render so newly added/enabled buttons stay managed
+  useEffect(applyRovingTabIndex);
+
+  // Arrow-key navigation between toolbar controls (wraps), Home/End jump
+  const handleToolbarKeyDown = (e) => {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return;
+
+    const buttons = getToolbarButtons();
+    if (buttons.length === 0) return;
+
+    // Only handle when focus is on a toolbar control (not the link dialog)
+    const currentIndex = buttons.indexOf(document.activeElement);
+    if (currentIndex === -1) return;
+
+    e.preventDefault();
+    let nextIndex;
+    if (e.key === 'ArrowRight') {
+      nextIndex = (currentIndex + 1) % buttons.length;
+    } else if (e.key === 'ArrowLeft') {
+      nextIndex = (currentIndex - 1 + buttons.length) % buttons.length;
+    } else if (e.key === 'Home') {
+      nextIndex = 0;
+    } else {
+      nextIndex = buttons.length - 1;
+    }
+
+    rovingIndexRef.current = nextIndex;
+    applyRovingTabIndex();
+    buttons[nextIndex].focus();
+  };
+
+  // Keep the roving index in sync when a control gains focus (e.g. via click)
+  const handleToolbarFocus = (e) => {
+    const buttons = getToolbarButtons();
+    const index = buttons.indexOf(e.target);
+    if (index !== -1) {
+      rovingIndexRef.current = index;
+      applyRovingTabIndex();
+    }
+  };
 
   // Helper to apply heading formatting with toggle functionality
   const setHeading = useCallback(
@@ -408,7 +472,14 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
   }, [showLinkDialog]);
 
   return (
-    <div className="editor-toolbar" role="toolbar" aria-label={t('editorToolbar')}>
+    <div
+      ref={toolbarRef}
+      className="editor-toolbar"
+      role="toolbar"
+      aria-label={t('editorToolbar')}
+      onKeyDown={handleToolbarKeyDown}
+      onFocus={handleToolbarFocus}
+    >
       <div className="toolbar-group">
         <button
           onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold')}
