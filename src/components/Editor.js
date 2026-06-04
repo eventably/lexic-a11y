@@ -12,6 +12,7 @@ import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
 import { HeadingNode, QuoteNode } from '@lexical/rich-text';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { ToolbarPlugin } from './ToolbarPlugin';
 // Temporarily comment out missing imports
@@ -64,6 +65,7 @@ const editorConfig = {
 };
 
 export default function Editor({ onContentChange }) {
+  const { t } = useTranslation();
   const [showDocs, setShowDocs] = useState(false);
   const [, setHtmlOutput] = useState('');
 
@@ -74,7 +76,9 @@ export default function Editor({ onContentChange }) {
       <div className="editor-container">
         <div className="editor-content-area">
           <RichTextPlugin
-            contentEditable={<ContentEditable className="editor-input" />}
+            contentEditable={
+              <ContentEditable className="editor-input" ariaLabel={t('editorContent')} />
+            }
             placeholder={<div className="editor-placeholder">Start writing...</div>}
             ErrorBoundary={LexicalErrorBoundary}
           />

@@ -229,6 +229,31 @@ locally:
 This opens our dedicated sandbox demo where you can interact with the editor and
 see how it works.
 
+### End-to-end tests
+
+The E2E suite runs the demo app in a real browser with
+[Playwright](https://playwright.dev/) and includes an
+[axe](https://github.com/dequelabs/axe-core) accessibility scan. A rich-text
+editor's correctness is largely real-browser behavior (keyboard handling,
+selection, contenteditable quirks, ARIA state), which Jest unit tests cannot
+exercise.
+
+```bash
+# One-time: install the Playwright browser
+npx playwright install chromium
+
+# Run the suite (starts the Vite dev server automatically)
+npm run test:e2e
+
+# Debug with a visible browser
+npm run test:e2e:headed
+```
+
+The suite covers typing, formatting (toolbar and keyboard), lists, the link
+dialog, keyboard navigation, ARIA state assertions, and an axe scan that fails
+on serious/critical violations. CI runs it on pull requests via
+`.github/workflows/e2e.yml`.
+
 ### Building for Production
 
 Once you are satisfied with your changes, build the package for production:
@@ -259,6 +284,7 @@ We welcome contributions from the community! If you'd like to contribute:
 | `npm run build`         | Build the library (Rollup → `dist/`)          |
 | `npm run build:analyze` | Build with bundle visualizer report           |
 | `npm test`              | Run the Jest test suite                       |
+| `npm run test:e2e`      | Run the Playwright E2E suite                  |
 | `npm run lint`          | Run ESLint                                    |
 | `npm run lint:css`      | Run Stylelint                                 |
 | `npm run lint:md`       | Run markdownlint-cli2                         |
