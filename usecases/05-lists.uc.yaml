@@ -1,0 +1,42 @@
+id: editor-lists
+title: "Create Bullet And Numbered Lists"
+type: positive
+description: "Verify that a user can convert content to a bullet list and a numbered list
+  via the toolbar, toggle a list back off, and use the
+  Ctrl/Cmd+Shift+8 / Ctrl/Cmd+Shift+7 keyboard shortcuts."
+
+preconditions:
+  - "The demo app is running (npm start)"
+  - "The editor is empty"
+
+start_location: "http://localhost:4001"
+
+expected_result: "Content converts to semantic list markup and the corresponding toolbar
+  toggle reflects the active state"
+
+steps:
+  - locate: field "Editor content"
+  - focus: field "Editor content"
+  - keyboard: "First item"
+
+  # Bullet list via toolbar
+  - locate: button "Bullet List"
+  - activate: button "Bullet List"
+  - verify: button "Bullet List" attribute "aria-pressed" is "true"
+
+  # Toggle off (activating again removes the list)
+  - activate: button "Bullet List"
+  - verify: button "Bullet List" attribute "aria-pressed" is "false"
+
+  # Numbered list via toolbar
+  - locate: button "Numbered List"
+  - activate: button "Numbered List"
+  - verify: button "Numbered List" attribute "aria-pressed" is "true"
+  - activate: button "Numbered List"
+
+  # Keyboard shortcut paths
+  - focus: field "Editor content"
+  - keyboard: "ControlOrMeta+Shift+8"
+  - verify: button "Bullet List" attribute "aria-pressed" is "true"
+  - keyboard: "ControlOrMeta+Shift+7"
+  - verify: button "Numbered List" attribute "aria-pressed" is "true"

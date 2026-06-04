@@ -1,0 +1,41 @@
+id: editor-inline-formatting-toolbar
+title: "Apply Inline Formatting With The Toolbar"
+type: positive
+description: "Verify that a user can select text and apply bold, italic, underline, and
+  strikethrough formatting using the toolbar buttons, and that each toggle
+  exposes its pressed state to assistive technology."
+
+preconditions:
+  - "The demo app is running (npm start)"
+  - "The editor is empty"
+
+start_location: "http://localhost:4001"
+
+expected_result: 'Each formatting toggle applies to the selected text and reports
+  aria-pressed="true" while active'
+
+steps:
+  - locate: field "Editor content"
+  - focus: field "Editor content"
+  - keyboard: "Format me"
+  - keyboard: "ControlOrMeta+a"
+
+  # Bold
+  - locate: button "Bold"
+  - activate: button "Bold"
+  - verify: button "Bold" attribute "aria-pressed" is "true"
+
+  # Italic
+  - locate: button "Italic"
+  - activate: button "Italic"
+  - verify: button "Italic" attribute "aria-pressed" is "true"
+
+  # Underline
+  - locate: button "Underline"
+  - activate: button "Underline"
+  - verify: button "Underline" attribute "aria-pressed" is "true"
+
+  # Strikethrough
+  - locate: button "Strikethrough"
+  - activate: button "Strikethrough"
+  - verify: button "Strikethrough" attribute "aria-pressed" is "true"

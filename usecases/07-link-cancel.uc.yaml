@@ -1,0 +1,29 @@
+id: editor-link-cancel
+title: "Dismiss The Link Dialog Without Inserting"
+type: negative
+description: "Verify that a user can open the link dialog and dismiss it with the Cancel
+  button or the Escape key without modifying the document."
+
+preconditions:
+  - "The demo app is running (npm start)"
+  - "The editor is empty"
+
+start_location: "http://localhost:4001"
+
+expected_result: "The dialog closes and no link is inserted"
+
+steps:
+  - locate: button "Insert Link"
+  - activate: button "Insert Link"
+  - locate: dialog "Insert Link"
+
+  # Cancel button path
+  - locate: button "Cancel"
+  - focus: button "Cancel"
+  - activate: button "Cancel"
+
+  # Escape key path
+  - activate: button "Insert Link"
+  - locate: dialog "Insert Link"
+  - focus: field "URL"
+  - keyboard: "Escape"
