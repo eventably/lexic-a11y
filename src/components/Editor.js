@@ -13,6 +13,7 @@ import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
 import { HeadingNode, QuoteNode } from '@lexical/rich-text';
 import { useState } from 'react';
 
+import { HeadingOutlinePlugin } from './HeadingOutlinePlugin';
 import { ToolbarPlugin } from './ToolbarPlugin';
 // Temporarily comment out missing imports
 // import { ImageNode } from '@lexical/image';
@@ -99,6 +100,7 @@ export default function Editor({ onContentChange }) {
             }}
           />
         </div>
+        <HeadingOutlinePlugin />
       </div>
 
       {showDocs ? (
