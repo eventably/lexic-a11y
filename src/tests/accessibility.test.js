@@ -28,6 +28,7 @@ jest.mock('lexical', () => ({
   $getSelection: jest.fn(() => null),
   $isRangeSelection: jest.fn(() => false),
   $createParagraphNode: jest.fn(() => ({})),
+  $getRoot: jest.fn(() => ({ getChildren: () => [], getTextContent: () => '' })),
   KEY_ESCAPE_COMMAND: 'escape',
   COMMAND_PRIORITY_HIGH: 1,
   FORMAT_TEXT_COMMAND: 'format-text',
@@ -76,6 +77,10 @@ jest.mock('@lexical/react/LexicalErrorBoundary', () => ({
 }));
 jest.mock('@lexical/react/LexicalLinkPlugin', () => ({ LinkPlugin: () => null }));
 jest.mock('@lexical/react/LexicalListPlugin', () => ({ ListPlugin: () => null }));
+jest.mock('@lexical/react/LexicalMarkdownShortcutPlugin', () => ({
+  MarkdownShortcutPlugin: () => null,
+}));
+jest.mock('../utils/markdown-transformers', () => ({ EDITOR_TRANSFORMERS: [] }));
 jest.mock('@lexical/html', () => ({ $generateHtmlFromNodes: () => '' }));
 
 const renderWithI18n = (component) =>

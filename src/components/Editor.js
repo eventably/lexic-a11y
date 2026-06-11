@@ -8,12 +8,17 @@ import LexicalErrorBoundary from '@lexical/react/LexicalErrorBoundary';
 import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
 import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin';
 import { ListPlugin } from '@lexical/react/LexicalListPlugin';
+import { MarkdownShortcutPlugin } from '@lexical/react/LexicalMarkdownShortcutPlugin';
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
 import { HeadingNode, QuoteNode } from '@lexical/rich-text';
 import { useState } from 'react';
 
+import { EDITOR_TRANSFORMERS } from '../utils/markdown-transformers';
+
+import { HeadingOutlinePlugin } from './HeadingOutlinePlugin';
 import { ToolbarPlugin } from './ToolbarPlugin';
+import { WordCountPlugin } from './WordCountPlugin';
 // Temporarily comment out missing imports
 // import { ImageNode } from '@lexical/image';
 // import { HorizontalRuleNode } from '@lexical/react/LexicalHorizontalRuleNode';
@@ -81,6 +86,7 @@ export default function Editor({ onContentChange }) {
           <HistoryPlugin />
           <LinkPlugin />
           <ListPlugin />
+          <MarkdownShortcutPlugin transformers={EDITOR_TRANSFORMERS} />
           <OnChangePlugin
             onChange={(editorState, editor) => {
               editorState.read(() => {
@@ -99,6 +105,8 @@ export default function Editor({ onContentChange }) {
             }}
           />
         </div>
+        <HeadingOutlinePlugin />
+        <WordCountPlugin />
       </div>
 
       {showDocs ? (
