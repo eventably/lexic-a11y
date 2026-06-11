@@ -105,6 +105,10 @@ jest.mock('../utils/markdown-transformers', () => ({
   EDITOR_TRANSFORMERS: [],
 }));
 
+jest.mock('../components/PastePlugin', () => ({
+  PastePlugin: () => <div data-testid="paste-plugin" />,
+}));
+
 // Mock ToolbarPlugin to expose setShowDocs trigger
 jest.mock('../components/ToolbarPlugin', () => ({
   ToolbarPlugin: ({ setShowDocs }) => (
@@ -141,6 +145,7 @@ describe('Editor Component', () => {
     expect(screen.getByTestId('list-plugin')).toBeInTheDocument();
     expect(screen.getByTestId('markdown-shortcut-plugin')).toBeInTheDocument();
     expect(screen.getByTestId('on-change-plugin')).toBeInTheDocument();
+    expect(screen.getByTestId('paste-plugin')).toBeInTheDocument();
     expect(screen.getByTestId('heading-outline-plugin')).toBeInTheDocument();
     expect(screen.getByTestId('word-count-plugin')).toBeInTheDocument();
   });

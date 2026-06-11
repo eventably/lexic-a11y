@@ -21,6 +21,7 @@ import { useTranslation } from 'react-i18next';
 import { EDITOR_TRANSFORMERS } from '../utils/markdown-transformers';
 
 import { HeadingOutlinePlugin } from './HeadingOutlinePlugin';
+import { PastePlugin } from './PastePlugin';
 import { ToolbarPlugin } from './ToolbarPlugin';
 import { WordCountPlugin } from './WordCountPlugin';
 // Temporarily comment out missing imports
@@ -98,6 +99,7 @@ export default function Editor({ onContentChange }) {
           <LinkPlugin />
           <ListPlugin />
           <MarkdownShortcutPlugin transformers={EDITOR_TRANSFORMERS} />
+          <PastePlugin />
           <OnChangePlugin
             onChange={(editorState, editor) => {
               editorState.read(() => {
@@ -182,6 +184,9 @@ export default function Editor({ onContentChange }) {
                 </li>
                 <li>
                   <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>6</kbd>: Heading 6
+                </li>
+                <li>
+                  <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>V</kbd>: Paste as plain text
                 </li>
                 <li>
                   <kbd>Esc</kbd>: Exit editor focus
