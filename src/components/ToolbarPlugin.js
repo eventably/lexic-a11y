@@ -346,8 +346,14 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
               // Find headings
               headingTag = findHeadingTag(anchorNode);
 
-              // Detect whether the selection is inside a code block
-              codeBlockActive = $isCodeNode(anchorNode) || $isCodeNode(anchorNode.getParent());
+              // Detect whether the selection is inside a code block. Check both
+              // anchor and focus so the active state matches toggleCodeBlock's logic.
+              const focusNode = selection.focus.getNode();
+              codeBlockActive =
+                $isCodeNode(anchorNode) ||
+                $isCodeNode(anchorNode.getParent()) ||
+                $isCodeNode(focusNode) ||
+                $isCodeNode(focusNode.getParent());
 
               // Helper to safely get parent
               const getParentSafely = (node) => {
@@ -596,7 +602,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
           onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'code')}
           aria-label={t('inlineCode')}
           className={isInlineCode ? 'active' : ''}
-          aria-pressed={isInlineCode ? true : false}
+          aria-pressed={isInlineCode}
         >
           <svg
             className="icon-inline-code"
@@ -627,7 +633,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
           onClick={toggleCodeBlock}
           aria-label={t('codeBlock')}
           className={`code-block-button ${isCodeBlockActive ? 'active' : ''}`}
-          aria-pressed={isCodeBlockActive ? true : false}
+          aria-pressed={isCodeBlockActive}
         >
           <svg
             className="icon-code-block"

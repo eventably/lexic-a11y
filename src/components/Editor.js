@@ -95,7 +95,9 @@ export default function Editor({ onContentChange }) {
                 // Use a simple regex to clean up the utility classes
                 const cleanHtml = htmlString
                   .replace(/class="[^"]*"/g, '') // Remove all class attributes
-                  .replace(/<(h[1-6]|p|ul|ol|li|pre|code)([^>]*)>/g, '<$1>') // Clean heading, paragraph, list, and code tags
+                  // List longer tags before their prefixes (pre before p) so the
+                  // alternation doesn't rewrite <pre> as <p>.
+                  .replace(/<(h[1-6]|pre|p|ul|ol|li|code)([^>]*)>/g, '<$1>') // Clean heading, paragraph, list, and code tags
                   .replace(/<a([^>]*)(class="[^"]*")([^>]*)>/g, '<a$1$3>'); // Clean link tags
 
                 setHtmlOutput(cleanHtml);
