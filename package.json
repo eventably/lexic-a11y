@@ -30,7 +30,7 @@
     "dupes:ci": "jscpd . --config .jscpd.json --threshold 5",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "links": "lychee --no-progress --max-retries 0 --timeout 10 '**/*.md'",
+    "links": "lychee --no-progress --max-retries 0 --timeout 10 --exclude-path node_modules --exclude-path dist --exclude-path build --exclude-path coverage '**/*.md'",
     "size": "size-limit",
     "security:audit": "npm audit --production --audit-level=high",
     "security:osv": "osv-scanner --lockfile=package-lock.json",
