@@ -351,8 +351,14 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
               // Find headings
               headingTag = findHeadingTag(anchorNode);
 
-              // Detect whether the selection is inside a quote block
-              quoteActive = $isQuoteNode(anchorNode) || $isQuoteNode(anchorNode.getParent());
+              // Detect whether the selection is inside a quote block. Check both
+              // anchor and focus so the active state matches toggleQuote's logic.
+              const focusNode = selection.focus.getNode();
+              quoteActive =
+                $isQuoteNode(anchorNode) ||
+                $isQuoteNode(anchorNode.getParent()) ||
+                $isQuoteNode(focusNode) ||
+                $isQuoteNode(focusNode.getParent());
 
               // Helper to safely get parent
               const getParentSafely = (node) => {
@@ -654,7 +660,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
           onClick={toggleQuote}
           aria-label={t('blockquote')}
           className={`quote-button ${isQuoteActive ? 'active' : ''}`}
-          aria-pressed={isQuoteActive ? true : false}
+          aria-pressed={isQuoteActive}
         >
           <svg
             className="icon-quote"
