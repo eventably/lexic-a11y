@@ -12,7 +12,7 @@ code in this repository.
 ## Commands
 
 - Install: `npm install` (run `bash scripts/bootstrap.sh` first on a fresh clone
-  — it installs gitleaks/osv-scanner/semgrep/lychee via Homebrew).
+  — it installs trufflehog/osv-scanner/semgrep/lychee via Homebrew).
 - Start dev server: `npm start`
 - Build package: `npm run build`
 - Analyze bundle: `npm run build:analyze` (writes `reports/bundle-stats.html`)
@@ -36,10 +36,9 @@ code in this repository.
   emphasis).
 - Stylelint a11y rules are set to `severity: warning` for the same reason as
   ESLint.
-- `.gitleaksignore` suppresses known false-positives (i18n keys in an old
-  commit).
-- Husky hooks: `pre-commit` (lint-staged + gitleaks), `commit-msg` (commitlint),
-  `pre-push` (`npm run check`), `post-merge` (audit on lockfile change).
+- Husky hooks: `pre-commit` (lint-staged + trufflehog), `commit-msg`
+  (commitlint), `pre-push` (`npm run check`), `post-merge` (audit on lockfile
+  change).
 
 ## Git Workflow
 

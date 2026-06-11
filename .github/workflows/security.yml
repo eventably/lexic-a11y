@@ -12,6 +12,23 @@ permissions:
   security-events: write
 
 jobs:
+  # Secret scanning — fails on verified secrets
+  secret-scan:
+    name: Secret Scan (TruffleHog)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: TruffleHog OSS
+        # Pinned to an immutable commit SHA (v3.95.5) to avoid running a mutable
+        # @main that could change under us.
+        uses: trufflesecurity/trufflehog@d411fff7b8879a62509f3fa98c07f247ac089a51 # v3.95.5
+        with:
+          path: ./
+          extra_args: --only-verified
+
   # Quick scan on every push/PR
   npm-audit:
     name: NPM Audit

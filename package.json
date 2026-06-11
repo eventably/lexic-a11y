@@ -30,12 +30,12 @@
     "dupes:ci": "jscpd . --config .jscpd.json --threshold 5",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "links": "lychee --no-progress --max-retries 0 --timeout 10 '**/*.md'",
+    "links": "lychee --no-progress --max-retries 0 --timeout 10 --exclude-path node_modules --exclude-path dist --exclude-path build --exclude-path coverage '**/*.md'",
     "size": "size-limit",
     "security:audit": "npm audit --production --audit-level=high",
     "security:osv": "osv-scanner --lockfile=package-lock.json",
     "security:semgrep": "semgrep --config=p/javascript --config=p/react --config=p/owasp-top-ten --error --metrics=off",
-    "security:secrets": "gitleaks detect --no-banner",
+    "security:secrets": "trufflehog git file://. --only-verified --fail",
     "security": "npm-run-all -p security:audit security:osv security:semgrep security:secrets",
     "license:check": "license-checker-rseidelsohn --production --onlyAllow 'MIT;ISC;Apache-2.0;BSD-2-Clause;BSD-3-Clause;0BSD;CC0-1.0;Unlicense;Python-2.0;WTFPL;BlueOak-1.0.0' --excludePrivatePackages --summary",
     "license:report": "license-checker-rseidelsohn --production --csv --out reports/licenses.csv",
@@ -44,7 +44,9 @@
     "ci": "npm run check:all",
     "prepare": "husky",
     "example": "parcel serve examples/index.html --open",
-    "codesandbox": "parcel serve sandbox.html"
+    "codesandbox": "parcel serve sandbox.html",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed"
   },
   "keywords": [
     "react",
@@ -69,6 +71,7 @@
     "@lexical/html": "^0.12.0",
     "@lexical/link": "^0.12.0",
     "@lexical/list": "^0.12.0",
+    "@lexical/markdown": "^0.12.0",
     "@lexical/react": "^0.12.0",
     "@lexical/rich-text": "^0.12.0",
     "@lexical/selection": "^0.12.6",
@@ -81,6 +84,8 @@
     "react-i18next": "^13.0.0"
   },
   "devDependencies": {
+    "@afixt/a11y-assert": "2.1.3",
+    "@axe-core/playwright": "4.11.3",
     "@babel/core": "^7.29.0",
     "@babel/preset-env": "^7.29.2",
     "@babel/preset-react": "^7.22.0",
@@ -88,6 +93,7 @@
     "@commitlint/config-conventional": "19.8.1",
     "@double-great/stylelint-a11y": "3.4.10",
     "@eslint/js": "9.39.4",
+    "@playwright/test": "1.60.0",
     "@rollup/plugin-babel": "^6.0.0",
     "@rollup/plugin-commonjs": "^25.0.0",
     "@rollup/plugin-node-resolve": "^15.0.0",

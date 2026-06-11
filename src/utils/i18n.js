@@ -6,6 +6,8 @@ i18n.use(initReactI18next).init({
   resources: {
     en: {
       translation: {
+        undo: 'Undo',
+        redo: 'Redo',
         bold: 'Bold',
         italic: 'Italic',
         underline: 'Underline',
@@ -17,8 +19,8 @@ i18n.use(initReactI18next).init({
         heading4: 'H4',
         heading5: 'H5',
         heading6: 'H6',
-        horizontalRule: 'HR',
-        link: 'Link',
+        insertHorizontalRule: 'Insert Horizontal Rule',
+        blockquote: 'Blockquote',
         uploadImage: 'Upload Image',
         insertImage: 'Insert Image',
         insertTable: 'Insert Table',
@@ -29,6 +31,10 @@ i18n.use(initReactI18next).init({
         deleteTable: 'Delete Table',
         tableTools: 'Table Tools',
         editorToolbar: 'Editor Toolbar',
+        editorContent: 'Editor content',
+        bulletList: 'Bullet List',
+        numberedList: 'Numbered List',
+        showHelp: 'Show Help',
         enterUrl: 'Enter URL',
         enterImageUrl: 'Enter image URL',
         enterAltText: 'Enter alt text',
@@ -39,6 +45,18 @@ i18n.use(initReactI18next).init({
         linkText: 'Link Text',
         cancel: 'Cancel',
         insert: 'Insert',
+        // Document outline / heading validation
+        documentOutline: 'Document Outline',
+        outlineEmpty: 'No headings yet. Headings appear here as you add them.',
+        outlineUntitled: '(untitled heading)',
+        headingWarningPrefix: 'Warning',
+        headingSkippedLevel: 'Heading level skipped: {{from}} is followed by {{to}}',
+        headingMultipleH1: 'Multiple H1 headings found ({{count}})',
+        // Live word/character count
+        wordCount_one: '{{count}} word',
+        wordCount_other: '{{count}} words',
+        charCount_one: '{{count}} character',
+        charCount_other: '{{count}} characters',
       },
     },
     // Additional languages can be added here.
