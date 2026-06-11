@@ -1,0 +1,19 @@
+id: editor-text-entry
+title: "Enter Text Into The Editor"
+type: positive
+description: "Verify that a user can focus the editor and type plain text, and that the
+  typed content is reflected in the document."
+
+preconditions:
+  - "The demo app is running (npm start)"
+  - "The editor is empty"
+
+start_location: "http://localhost:4001"
+
+expected_result: "The typed text appears in the editor content area"
+
+steps:
+  - locate: field "Editor content"
+  - focus: field "Editor content"
+  - keyboard: "Hello accessible world"
+  - verify: text "Hello accessible world"

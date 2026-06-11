@@ -1,0 +1,30 @@
+id: editor-inline-formatting-keyboard
+title: "Apply Inline Formatting With Keyboard Shortcuts"
+type: positive
+description: "Verify that a keyboard-only user can apply bold, italic, and underline with
+  Ctrl/Cmd+B, Ctrl/Cmd+I, and Ctrl/Cmd+U, with the toolbar reflecting each
+  state change."
+
+preconditions:
+  - "The demo app is running (npm start)"
+  - "The editor is empty"
+
+start_location: "http://localhost:4001"
+
+expected_result: 'Formatting applies without any pointer interaction and the corresponding
+  toolbar toggles report aria-pressed="true"'
+
+steps:
+  - locate: field "Editor content"
+  - focus: field "Editor content"
+  - keyboard: "Keyboard only formatting"
+  - keyboard: "ControlOrMeta+a"
+
+  - keyboard: "ControlOrMeta+b"
+  - verify: button "Bold" attribute "aria-pressed" is "true"
+
+  - keyboard: "ControlOrMeta+i"
+  - verify: button "Italic" attribute "aria-pressed" is "true"
+
+  - keyboard: "ControlOrMeta+u"
+  - verify: button "Underline" attribute "aria-pressed" is "true"

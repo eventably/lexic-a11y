@@ -49,9 +49,10 @@ We adopt the tooling listed in issue #14 with the following scope constraints:
 - One command (`npm run check:all`) runs the full local gate.
 - ESLint flat config pulls in sonarjs, security, unicorn, import-x, promise, n,
   jsdoc, and no-secrets on top of the existing React and a11y plugins.
-- Husky gates are layered: `pre-commit` (lint-staged + gitleaks), `commit-msg`
-  (commitlint), `pre-push` (`npm run check` + `lychee` Markdown link check),
-  `post-merge` (audit on lockfile change).
+- Husky gates are layered: `pre-commit` (lint-staged + trufflehog — originally
+  gitleaks, replaced per issue #17), `commit-msg` (commitlint), `pre-push`
+  (`npm run check` + `lychee` Markdown link check), `post-merge` (audit on
+  lockfile change).
 - **Markdown link checking (`lychee`) runs locally at `pre-push`**, not as a
   scheduled GitHub Action. This keeps the feedback loop local (the issue's
   preference for Husky gates over Actions minutes) and surfaces broken links
@@ -70,9 +71,9 @@ We adopt the tooling listed in issue #14 with the following scope constraints:
   should be tracked separately.
 - `ToolbarPlugin.js` flags structural warnings (length, complexity, nesting). It
   needs refactoring, tracked separately.
-- Bootstrap now requires Homebrew (`gitleaks`, `osv-scanner`, `semgrep`,
-  `lychee`). The pre-commit hook degrades gracefully if `gitleaks` is absent but
-  logs a warning.
+- Bootstrap now requires Homebrew (`trufflehog`, `osv-scanner`, `semgrep`,
+  `lychee`). The pre-commit hook degrades gracefully if `trufflehog` is absent
+  but logs a warning.
 
 ### Follow-ups
 
