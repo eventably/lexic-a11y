@@ -275,4 +275,34 @@ describe('ToolbarPlugin Component', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(mockEditor.focus).toHaveBeenCalled();
   });
+
+  it('rejects a javascript: URL: disables Insert, shows an error, dispatches nothing', async () => {
+    const user = userEvent.setup();
+
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    await user.click(screen.getByLabelText('Link'));
+    await user.type(screen.getByLabelText(/URL/), 'javascript:alert(1)');
+
+    const insertButton = screen.getByRole('button', { name: 'Insert' });
+    expect(insertButton).toBeDisabled();
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+    expect(screen.getByLabelText(/URL/)).toHaveAttribute('aria-invalid', 'true');
+
+    // Even if the click somehow fires, no link command is dispatched.
+    await user.click(insertButton);
+    expect(mockEditor.dispatchCommand).not.toHaveBeenCalledWith('toggle-link', expect.anything());
+  });
+
+  it('enables Insert for a safe https URL', async () => {
+    const user = userEvent.setup();
+
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    await user.click(screen.getByLabelText('Link'));
+    await user.type(screen.getByLabelText(/URL/), 'https://example.com');
+
+    expect(screen.getByRole('button', { name: 'Insert' })).toBeEnabled();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
 });

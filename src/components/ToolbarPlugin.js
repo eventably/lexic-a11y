@@ -21,6 +21,8 @@ import {
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { isSafeUrl, sanitizeUrl } from '../utils/sanitize-url';
+
 export function ToolbarPlugin({ showDocs, setShowDocs }) {
   const [editor] = useLexicalComposerContext();
   const { t } = useTranslation();
@@ -826,7 +828,13 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
       {showLinkDialog ? (
         <div
           className="link-dialog-overlay"
-          onClick={() => setShowLinkDialog(false)}
+          onClick={(e) => {
+            // Close only on a genuine backdrop click, not on clicks that
+            // bubble up from the dialog contents (e.g. focusing the URL field).
+            if (e.target === e.currentTarget) {
+              setShowLinkDialog(false);
+            }
+          }}
           onKeyDown={(e) => {
             if (e.key === 'Escape') {
               setShowLinkDialog(false);
@@ -854,7 +862,16 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
                   onChange={(e) => setLinkUrl(e.target.value)}
                   placeholder="https://example.com"
                   aria-required="true"
+                  aria-invalid={linkUrl.trim() !== '' && !isSafeUrl(linkUrl)}
+                  aria-describedby={
+                    linkUrl.trim() !== '' && !isSafeUrl(linkUrl) ? 'link-url-error' : undefined
+                  }
                 />
+                {linkUrl.trim() !== '' && !isSafeUrl(linkUrl) ? (
+                  <p id="link-url-error" className="link-dialog-error" role="alert">
+                    {t('linkUrlInvalid')}
+                  </p>
+                ) : null}
               </div>
 
               <div className="form-group">
@@ -893,7 +910,10 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
                   type="button"
                   className="insert-button"
                   onClick={() => {
-                    if (linkUrl) {
+                    // Reject unsafe URLs (javascript:, data:, …) before they can
+                    // ever reach a LinkNode and be written to the live DOM href.
+                    if (isSafeUrl(linkUrl)) {
+                      const safeUrl = sanitizeUrl(linkUrl);
                       // Close dialog first to prevent editor focus issues
                       setShowLinkDialog(false);
 
@@ -903,7 +923,16 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
                         editor.update(() => {
                           const selection = $getSelection();
                           if ($isRangeSelection(selection)) {
-                            if (linkText && selection.isCollapsed()) {
+                            const existingLink = findLinkNode(selection.anchor.getNode());
+                            if (existingLink) {
+                              // Editing in place: select the existing link's contents so
+                              // TOGGLE_LINK updates its URL rather than duplicating text.
+                              existingLink.select(0, existingLink.getChildrenSize());
+                              editor.dispatchCommand(TOGGLE_LINK_COMMAND, {
+                                url: safeUrl,
+                                target: '_blank',
+                              });
+                            } else if (linkText && selection.isCollapsed()) {
                               // If there's link text but no selection, insert the text with the link
                               selection.insertText(linkText);
                               // Need to get selection again after text insertion
@@ -911,14 +940,14 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
                               if ($isRangeSelection(updatedSelection)) {
                                 updatedSelection.modify('backward', linkText.length, 'character');
                                 editor.dispatchCommand(TOGGLE_LINK_COMMAND, {
-                                  url: linkUrl,
+                                  url: safeUrl,
                                   target: '_blank',
                                 });
                               }
                             } else {
                               // Apply link to the current selection
                               editor.dispatchCommand(TOGGLE_LINK_COMMAND, {
-                                url: linkUrl,
+                                url: safeUrl,
                                 target: '_blank',
                               });
                             }
@@ -933,7 +962,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
                       setLinkText('');
                     }
                   }}
-                  disabled={!linkUrl}
+                  disabled={!isSafeUrl(linkUrl)}
                 >
                   {t('insert')}
                 </button>
