@@ -31,11 +31,13 @@ const renderWithI18n = (component) => {
   return render(<I18nextProvider i18n={i18n}>{component}</I18nextProvider>);
 };
 
-// Simulate a Lexical update cycle with the given document text
+// Simulate a Lexical update cycle with the given document text. The plugin
+// debounces (~400ms), so advance timers to flush the pending update.
 const simulateUpdate = (text) => {
   mockText = text;
   act(() => {
     capturedListener({ editorState: { read: (cb) => cb() } });
+    jest.advanceTimersByTime(400);
   });
 };
 
@@ -61,6 +63,12 @@ describe('WordCountPlugin Component', () => {
   beforeEach(() => {
     mockText = '';
     mockEditor.registerUpdateListener.mockClear();
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.runOnlyPendingTimers();
+    jest.useRealTimers();
   });
 
   it('renders a polite live region with role status', () => {
@@ -81,6 +89,23 @@ describe('WordCountPlugin Component', () => {
 
     simulateUpdate('Hello accessible world');
 
+    expect(screen.getByRole('status')).toHaveTextContent('3 words, 22 characters');
+  });
+
+  it('debounces: counts settle only after the pause, not on every keystroke', () => {
+    renderWithI18n(<WordCountPlugin />);
+
+    mockText = 'Hello accessible world';
+    act(() => {
+      capturedListener({ editorState: { read: (cb) => cb() } });
+      // Before the debounce window elapses, the count has not updated yet.
+      jest.advanceTimersByTime(100);
+    });
+    expect(screen.getByRole('status')).toHaveTextContent('0 words, 0 characters');
+
+    act(() => {
+      jest.advanceTimersByTime(400);
+    });
     expect(screen.getByRole('status')).toHaveTextContent('3 words, 22 characters');
   });
 

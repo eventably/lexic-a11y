@@ -17,13 +17,24 @@ export function WordCountPlugin() {
   const [charCount, setCharCount] = useState(0);
 
   useEffect(() => {
-    return editor.registerUpdateListener(({ editorState }) => {
-      editorState.read(() => {
-        const text = $getRoot().getTextContent();
-        setWordCount(countWords(text));
-        setCharCount(text.length);
-      });
+    // Debounce so rapid typing doesn't recompute on every keystroke or flood
+    // the polite live region with announcements; counts settle ~400ms after the
+    // user pauses.
+    let timeoutId;
+    const unregister = editor.registerUpdateListener(({ editorState }) => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        editorState.read(() => {
+          const text = $getRoot().getTextContent();
+          setWordCount(countWords(text));
+          setCharCount(text.length);
+        });
+      }, 400);
     });
+    return () => {
+      clearTimeout(timeoutId);
+      unregister();
+    };
   }, [editor]);
 
   return (
