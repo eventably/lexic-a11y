@@ -1,0 +1,31 @@
+id: editor-help-overlay
+title: "Open And Close The Keyboard Shortcuts Help"
+type: positive
+description: "Verify that a user can open the keyboard-shortcuts help overlay from the
+  toolbar (and with Ctrl/Cmd+D), read it, and close it again."
+
+preconditions:
+  - "The demo app is running (npm start)"
+
+start_location: "http://localhost:4001"
+
+expected_result: "The help overlay opens, lists the editor shortcuts, and closes via the
+  close button; the toolbar toggle reflects the open state"
+
+steps:
+  # Toolbar path
+  - locate: button "Show Help"
+  - focus: button "Show Help"
+  - activate: button "Show Help"
+  - verify: button "Show Help" attribute "aria-pressed" is "true"
+  - verify: heading "Editor Shortcuts"
+
+  - locate: button "Close documentation"
+  - activate: button "Close documentation"
+  - verify: button "Show Help" attribute "aria-pressed" is "false"
+
+  # Keyboard shortcut path (Ctrl/Cmd+D toggles the overlay)
+  - focus: field "Editor content"
+  - keyboard: "ControlOrMeta+d"
+  - verify: heading "Editor Shortcuts"
+  - keyboard: "ControlOrMeta+d"
