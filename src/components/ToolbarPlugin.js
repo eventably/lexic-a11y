@@ -749,6 +749,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
 
       <div className="toolbar-group">
         <button
+          type="button"
           onClick={() => editor.dispatchCommand(INSERT_HORIZONTAL_RULE_COMMAND, undefined)}
           aria-label={t('insertHorizontalRule')}
           className="horizontal-rule-button"
