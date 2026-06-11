@@ -7,17 +7,24 @@ import { LexicalComposer } from '@lexical/react/LexicalComposer';
 import { ContentEditable } from '@lexical/react/LexicalContentEditable';
 import LexicalErrorBoundary from '@lexical/react/LexicalErrorBoundary';
 import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
+import { HorizontalRuleNode } from '@lexical/react/LexicalHorizontalRuleNode';
+import { HorizontalRulePlugin } from '@lexical/react/LexicalHorizontalRulePlugin';
 import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin';
 import { ListPlugin } from '@lexical/react/LexicalListPlugin';
+import { MarkdownShortcutPlugin } from '@lexical/react/LexicalMarkdownShortcutPlugin';
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
 import { HeadingNode, QuoteNode } from '@lexical/rich-text';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
+import { EDITOR_TRANSFORMERS } from '../utils/markdown-transformers';
+
+import { HeadingOutlinePlugin } from './HeadingOutlinePlugin';
 import { ToolbarPlugin } from './ToolbarPlugin';
+import { WordCountPlugin } from './WordCountPlugin';
 // Temporarily comment out missing imports
 // import { ImageNode } from '@lexical/image';
-// import { HorizontalRuleNode } from '@lexical/react/LexicalHorizontalRuleNode';
 
 const theme = {
   text: {
@@ -63,12 +70,13 @@ const editorConfig = {
     LinkNode,
     CodeNode,
     CodeHighlightNode,
+    HorizontalRuleNode,
     // ImageNode,
-    // HorizontalRuleNode,
   ],
 };
 
 export default function Editor({ onContentChange }) {
+  const { t } = useTranslation();
   const [showDocs, setShowDocs] = useState(false);
   const [, setHtmlOutput] = useState('');
 
@@ -79,13 +87,17 @@ export default function Editor({ onContentChange }) {
       <div className="editor-container">
         <div className="editor-content-area">
           <RichTextPlugin
-            contentEditable={<ContentEditable className="editor-input" />}
+            contentEditable={
+              <ContentEditable className="editor-input" ariaLabel={t('editorContent')} />
+            }
             placeholder={<div className="editor-placeholder">Start writing...</div>}
             ErrorBoundary={LexicalErrorBoundary}
           />
           <HistoryPlugin />
+          <HorizontalRulePlugin />
           <LinkPlugin />
           <ListPlugin />
+          <MarkdownShortcutPlugin transformers={EDITOR_TRANSFORMERS} />
           <OnChangePlugin
             onChange={(editorState, editor) => {
               editorState.read(() => {
@@ -97,7 +109,7 @@ export default function Editor({ onContentChange }) {
                   .replace(/class="[^"]*"/g, '') // Remove all class attributes
                   // List longer tags before their prefixes (pre before p) so the
                   // alternation doesn't rewrite <pre> as <p>.
-                  .replace(/<(h[1-6]|pre|p|ul|ol|li|code)([^>]*)>/g, '<$1>') // Clean heading, paragraph, list, and code tags
+                  .replace(/<(h[1-6]|pre|p|ul|ol|li|code|hr)([^>]*)>/g, '<$1>') // Clean heading, paragraph, list, code, and hr tags
                   .replace(/<a([^>]*)(class="[^"]*")([^>]*)>/g, '<a$1$3>'); // Clean link tags
 
                 setHtmlOutput(cleanHtml);
@@ -106,6 +118,8 @@ export default function Editor({ onContentChange }) {
             }}
           />
         </div>
+        <HeadingOutlinePlugin />
+        <WordCountPlugin />
       </div>
 
       {showDocs ? (
@@ -124,6 +138,13 @@ export default function Editor({ onContentChange }) {
             <div className="editor-docs-body">
               <ul>
                 <li>
+                  <kbd>Ctrl</kbd> + <kbd>Z</kbd>: Undo
+                </li>
+                <li>
+                  <kbd>Ctrl</kbd> + <kbd>Y</kbd> (or <kbd>Ctrl</kbd> + <kbd>Shift</kbd> +{' '}
+                  <kbd>Z</kbd>): Redo
+                </li>
+                <li>
                   <kbd>Ctrl</kbd> + <kbd>B</kbd>: Bold
                 </li>
                 <li>
@@ -140,6 +161,9 @@ export default function Editor({ onContentChange }) {
                 </li>
                 <li>
                   <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>7</kbd>: Numbered List
+                </li>
+                <li>
+                  <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Q</kbd>: Blockquote
                 </li>
                 <li>
                   <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>1</kbd>: Heading 1
@@ -161,6 +185,10 @@ export default function Editor({ onContentChange }) {
                 </li>
                 <li>
                   <kbd>Esc</kbd>: Exit editor focus
+                </li>
+                <li>
+                  <kbd>←</kbd> / <kbd>→</kbd> (in toolbar): Move between toolbar buttons;{' '}
+                  <kbd>Home</kbd> / <kbd>End</kbd> jump to first/last
                 </li>
               </ul>
               <h3>Usage Tips</h3>
