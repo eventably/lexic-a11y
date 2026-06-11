@@ -42,3 +42,5 @@ yarn.lock
 .DS_Store
 CHANGELOG.md
 LICENSE
+test-results/
+playwright-report/

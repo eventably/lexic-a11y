@@ -84,6 +84,10 @@ jest.mock('@lexical/link', () => ({
   TOGGLE_LINK_COMMAND: 'toggle-link',
 }));
 
+jest.mock('@lexical/react/LexicalHorizontalRuleNode', () => ({
+  INSERT_HORIZONTAL_RULE_COMMAND: 'insert-horizontal-rule',
+}));
+
 // Helper for rendering with i18n provider
 const renderWithI18n = (component) => {
   return render(<I18nextProvider i18n={i18n}>{component}</I18nextProvider>);
@@ -115,7 +119,7 @@ describe('ToolbarPlugin Component', () => {
     }
 
     // Link button
-    expect(screen.getByLabelText('Link')).toBeInTheDocument();
+    expect(screen.getByLabelText('Insert Link')).toBeInTheDocument();
   });
 
   it('dispatches bold command when bold button is clicked', async () => {
@@ -228,6 +232,21 @@ describe('ToolbarPlugin Component', () => {
     expect(mockEditor.update).toHaveBeenCalled();
   });
 
+  it('renders the horizontal rule button', () => {
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    expect(screen.getByLabelText('Insert Horizontal Rule')).toBeInTheDocument();
+  });
+
+  it('dispatches INSERT_HORIZONTAL_RULE_COMMAND when the horizontal rule button is clicked', async () => {
+    const user = userEvent.setup();
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    await user.click(screen.getByLabelText('Insert Horizontal Rule'));
+
+    expect(mockEditor.dispatchCommand).toHaveBeenCalledWith('insert-horizontal-rule', undefined);
+  });
+
   it('registers escape key command handler', () => {
     renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
 
@@ -251,7 +270,7 @@ describe('ToolbarPlugin Component', () => {
 
     renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
 
-    const linkButton = screen.getByLabelText('Link');
+    const linkButton = screen.getByLabelText('Insert Link');
     await user.click(linkButton);
 
     // Verify editor state was read to get selection
