@@ -80,6 +80,13 @@ jest.mock('@lexical/react/LexicalListPlugin', () => ({ ListPlugin: () => null })
 jest.mock('@lexical/react/LexicalMarkdownShortcutPlugin', () => ({
   MarkdownShortcutPlugin: () => null,
 }));
+jest.mock('@lexical/react/LexicalHorizontalRuleNode', () => ({
+  HorizontalRuleNode: class HorizontalRuleNode {},
+  INSERT_HORIZONTAL_RULE_COMMAND: 'insert-horizontal-rule',
+}));
+jest.mock('@lexical/react/LexicalHorizontalRulePlugin', () => ({
+  HorizontalRulePlugin: () => null,
+}));
 jest.mock('../utils/markdown-transformers', () => ({ EDITOR_TRANSFORMERS: [] }));
 jest.mock('@lexical/html', () => ({ $generateHtmlFromNodes: () => '' }));
 
