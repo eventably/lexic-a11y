@@ -9,4 +9,5 @@ Use `docs/templates/ADR.md` as the starting point. Name files
 
 <!-- Append entries in reverse chronological order. -->
 
+- [0002 — Remain on JavaScript (no TypeScript migration)](./0002-remain-on-javascript.md)
 - [0001 — Standardize tooling stack](./0001-standardize-tooling-stack.md)

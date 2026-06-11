@@ -1,0 +1,36 @@
+id: editor-headings
+title: "Apply Heading Levels"
+type: positive
+description: "Verify that a user can convert a paragraph to each heading level using the
+  toolbar buttons (H1 shown end-to-end; H2-H6 use the identical control
+  pattern), and via the Ctrl/Cmd+Alt+[1-6] keyboard shortcuts."
+
+preconditions:
+  - "The demo app is running (npm start)"
+  - "The editor is empty"
+
+start_location: "http://localhost:4001"
+
+expected_result: 'The block converts to the chosen heading level and the toolbar toggle for
+  that level reports aria-pressed="true"'
+
+steps:
+  - locate: field "Editor content"
+  - focus: field "Editor content"
+  - keyboard: "Document title"
+
+  # Toolbar path (H1; H2-H6 buttons follow the identical pattern)
+  - locate: button "H1"
+  - activate: button "H1"
+  - verify: button "H1" attribute "aria-pressed" is "true"
+  - verify: heading "Document title"
+
+  # Toggle back to paragraph by activating the same control again
+  - activate: button "H1"
+  - verify: button "H1" attribute "aria-pressed" is "false"
+
+  # Keyboard shortcut path (Ctrl/Cmd+Alt+2 for H2; 1-6 follow the same pattern)
+  - focus: field "Editor content"
+  - keyboard: "ControlOrMeta+Alt+2"
+  - verify: button "H2" attribute "aria-pressed" is "true"
+  - verify: heading "Document title"
