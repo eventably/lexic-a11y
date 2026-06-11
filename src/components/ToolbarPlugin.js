@@ -20,6 +20,7 @@ import {
   $createParagraphNode,
   $getSelection,
   $isRangeSelection,
+  $isTextNode,
   CAN_REDO_COMMAND,
   CAN_UNDO_COMMAND,
   COMMAND_PRIORITY_HIGH,
@@ -166,6 +167,51 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
     },
     [editor],
   );
+
+  // Strip all inline marks from the selection and reset blocks to paragraphs
+  const clearFormatting = useCallback(() => {
+    // $setBlocksType cannot unwrap list items, so detect a list selection and
+    // remove it via the list command before resetting the remaining blocks.
+    let inList = false;
+    editor.getEditorState().read(() => {
+      const selection = $getSelection();
+      if ($isRangeSelection(selection)) {
+        inList = selection.getNodes().some((node) => {
+          const parent = node.getParent ? node.getParent() : null;
+          return (
+            $isListNode(node) ||
+            $isListItemNode(node) ||
+            $isListNode(parent) ||
+            $isListItemNode(parent)
+          );
+        });
+      }
+    });
+    if (inList) {
+      editor.dispatchCommand(REMOVE_LIST_COMMAND, undefined);
+    }
+
+    editor.update(() => {
+      const selection = $getSelection();
+      if (!$isRangeSelection(selection)) return;
+
+      try {
+        // Clear inline text formats (bold/italic/underline/strikethrough/code)
+        // and any inline styles on the selected text nodes
+        selection.getNodes().forEach((node) => {
+          if ($isTextNode(node)) {
+            node.setFormat(0);
+            node.setStyle('');
+          }
+        });
+
+        // Reset block-level formatting back to plain paragraphs
+        $setBlocksType(selection, () => $createParagraphNode());
+      } catch (error) {
+        console.error('Error clearing formatting:', error);
+      }
+    });
+  }, [editor]);
 
   // Helper to toggle blockquote formatting (quote <-> paragraph)
   const toggleQuote = useCallback(() => {
@@ -769,6 +815,36 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
             />
             <path
               d="M12 13C15.5 14 16 15 16 17C16 19.5 13.5 20.5 12 20.5C10 20.5 8 19 8 19"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
+        <button
+          onClick={clearFormatting}
+          aria-label={t('clearFormatting')}
+          className="clear-formatting-button"
+        >
+          <svg
+            className="icon-clear-formatting"
+            aria-hidden="true"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M6 4H20M11 4L7 20"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M15 13L21 19M21 13L15 19"
               stroke="currentColor"
               strokeWidth="2"
               strokeLinecap="round"
