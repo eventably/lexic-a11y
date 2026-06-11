@@ -59,6 +59,7 @@ jest.mock('lexical', () => {
   class TextNode {}
   return {
     $getSelection: jest.fn(() => mockSelection),
+    $insertNodes: jest.fn(),
     $isRangeSelection: jest.fn(() => true),
     $isTextNode: jest.fn(() => true),
     $createParagraphNode: jest.fn(() => ({})),
@@ -101,6 +102,10 @@ jest.mock('@lexical/link', () => ({
 jest.mock('@lexical/code', () => ({
   $createCodeNode: jest.fn(() => ({})),
   $isCodeNode: jest.fn(() => false),
+}));
+
+jest.mock('../components/ImageNode', () => ({
+  $createImageNode: jest.fn((options) => ({ __image: true, ...options })),
 }));
 
 jest.mock('@lexical/react/LexicalHorizontalRuleNode', () => ({
@@ -308,6 +313,129 @@ describe('ToolbarPlugin Component', () => {
     expect(screen.getByLabelText('Inline Code')).toHaveAttribute('aria-pressed', 'true');
 
     mockSelection.hasFormat.mockImplementation(() => false);
+  });
+
+  describe('image insertion with required alt text', () => {
+    const openImageDialog = async (user) => {
+      await user.click(screen.getByLabelText('Insert Image'));
+    };
+
+    it('opens the image dialog from the toolbar button', async () => {
+      const user = userEvent.setup();
+      renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+      await openImageDialog(user);
+
+      expect(screen.getByRole('dialog', { name: 'Insert Image' })).toBeInTheDocument();
+      expect(screen.getByLabelText(/Alt Text/)).toBeInTheDocument();
+      expect(screen.getByLabelText(/decorative/i)).toBeInTheDocument();
+    });
+
+    it('disables Insert until alt text is provided', async () => {
+      const user = userEvent.setup();
+      renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+      await openImageDialog(user);
+      await user.type(screen.getByLabelText(/URL/), 'https://example.com/cat.png');
+
+      const insertButton = screen.getByRole('button', { name: 'Insert' });
+      expect(insertButton).toBeDisabled();
+
+      await user.type(screen.getByLabelText(/Alt Text/), 'A cat');
+      expect(insertButton).toBeEnabled();
+    });
+
+    it('keeps Insert disabled for a whitespace-only URL or alt text', async () => {
+      const user = userEvent.setup();
+      renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+      await openImageDialog(user);
+      const insertButton = screen.getByRole('button', { name: 'Insert' });
+
+      // Whitespace-only URL must not enable Insert
+      await user.type(screen.getByLabelText(/URL/), '   ');
+      await user.type(screen.getByLabelText(/Alt Text/), 'A cat');
+      expect(insertButton).toBeDisabled();
+
+      // Real URL but whitespace-only alt (not decorative) also stays disabled
+      await user.clear(screen.getByLabelText(/URL/));
+      await user.type(screen.getByLabelText(/URL/), 'https://example.com/cat.png');
+      await user.clear(screen.getByLabelText(/Alt Text/));
+      await user.type(screen.getByLabelText(/Alt Text/), '   ');
+      expect(insertButton).toBeDisabled();
+    });
+
+    it('allows insertion without alt text only when explicitly marked decorative', async () => {
+      const user = userEvent.setup();
+      renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+      await openImageDialog(user);
+      await user.type(screen.getByLabelText(/URL/), 'https://example.com/border.png');
+
+      const insertButton = screen.getByRole('button', { name: 'Insert' });
+      expect(insertButton).toBeDisabled();
+
+      await user.click(screen.getByLabelText(/decorative/i));
+      expect(insertButton).toBeEnabled();
+      // Alt input is disabled in decorative mode
+      expect(screen.getByLabelText(/Alt Text/)).toBeDisabled();
+    });
+
+    it('inserts a meaningful image node with the provided alt text', async () => {
+      const user = userEvent.setup();
+      const { $createImageNode } = require('../components/ImageNode');
+      const { $insertNodes } = require('lexical');
+      $createImageNode.mockClear();
+      $insertNodes.mockClear();
+
+      renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+      await openImageDialog(user);
+      await user.type(screen.getByLabelText(/URL/), 'https://example.com/cat.png');
+      await user.type(screen.getByLabelText(/Alt Text/), 'A cat');
+      await user.click(screen.getByRole('button', { name: 'Insert' }));
+
+      expect($createImageNode).toHaveBeenCalledWith({
+        src: 'https://example.com/cat.png',
+        alt: 'A cat',
+        decorative: false,
+      });
+      expect($insertNodes).toHaveBeenCalled();
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+
+    it('inserts a decorative image with empty alt', async () => {
+      const user = userEvent.setup();
+      const { $createImageNode } = require('../components/ImageNode');
+      $createImageNode.mockClear();
+
+      renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+      await openImageDialog(user);
+      await user.type(screen.getByLabelText(/URL/), 'https://example.com/border.png');
+      await user.click(screen.getByLabelText(/decorative/i));
+      await user.click(screen.getByRole('button', { name: 'Insert' }));
+
+      expect($createImageNode).toHaveBeenCalledWith({
+        src: 'https://example.com/border.png',
+        alt: '',
+        decorative: true,
+      });
+    });
+
+    it('cancels without inserting', async () => {
+      const user = userEvent.setup();
+      const { $insertNodes } = require('lexical');
+      $insertNodes.mockClear();
+
+      renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+      await openImageDialog(user);
+      await user.click(screen.getByRole('button', { name: 'Cancel' }));
+
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect($insertNodes).not.toHaveBeenCalled();
+    });
   });
 
   describe('roving tabindex (WAI-ARIA toolbar pattern)', () => {

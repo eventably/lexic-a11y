@@ -21,11 +21,11 @@ import { useTranslation } from 'react-i18next';
 import { EDITOR_TRANSFORMERS } from '../utils/markdown-transformers';
 
 import { HeadingOutlinePlugin } from './HeadingOutlinePlugin';
+import { ImageNode } from './ImageNode';
 import { PastePlugin } from './PastePlugin';
 import { ToolbarPlugin } from './ToolbarPlugin';
 import { WordCountPlugin } from './WordCountPlugin';
 // Temporarily comment out missing imports
-// import { ImageNode } from '@lexical/image';
 
 const theme = {
   text: {
@@ -72,7 +72,7 @@ const editorConfig = {
     CodeNode,
     CodeHighlightNode,
     HorizontalRuleNode,
-    // ImageNode,
+    ImageNode,
   ],
 };
 

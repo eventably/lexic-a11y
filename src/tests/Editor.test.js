@@ -109,6 +109,10 @@ jest.mock('../components/PastePlugin', () => ({
   PastePlugin: () => <div data-testid="paste-plugin" />,
 }));
 
+jest.mock('../components/ImageNode', () => ({
+  ImageNode: class ImageNode {},
+}));
+
 // Mock ToolbarPlugin to expose setShowDocs trigger
 jest.mock('../components/ToolbarPlugin', () => ({
   ToolbarPlugin: ({ setShowDocs }) => (

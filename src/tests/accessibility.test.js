@@ -88,6 +88,10 @@ jest.mock('@lexical/react/LexicalMarkdownShortcutPlugin', () => ({
   MarkdownShortcutPlugin: () => null,
 }));
 jest.mock('../components/PastePlugin', () => ({ PastePlugin: () => null }));
+jest.mock('../components/ImageNode', () => ({
+  ImageNode: class ImageNode {},
+  $createImageNode: jest.fn(() => ({})),
+}));
 jest.mock('@lexical/react/LexicalHorizontalRuleNode', () => ({
   HorizontalRuleNode: class HorizontalRuleNode {},
   INSERT_HORIZONTAL_RULE_COMMAND: 'insert-horizontal-rule',
