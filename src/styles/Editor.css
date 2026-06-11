@@ -528,3 +528,10 @@ kbd {
 .editor-outline-tag {
   font-weight: 700;
 }
+
+.editor-word-count {
+  padding: 6px 12px;
+  font-size: 0.875rem;
+  text-align: right;
+  border-top: 1px solid var(--border-color);
+}

@@ -1,7 +1,12 @@
 npx lint-staged
 
-if command -v gitleaks >/dev/null 2>&1; then
-  gitleaks protect --staged --no-banner
+if command -v trufflehog >/dev/null 2>&1; then
+  # Scan the working-tree versions of staged files for verified secrets
+  staged=$(git diff --cached --name-only --diff-filter=ACM)
+  if [ -n "$staged" ]; then
+    # shellcheck disable=SC2086
+    trufflehog filesystem $staged --only-verified --fail --no-update
+  fi
 else
-  echo "warning: gitleaks not installed — skipping secret scan. Install with 'brew install gitleaks'."
+  echo "warning: trufflehog not installed — skipping secret scan. Install with 'brew install trufflehog'."
 fi

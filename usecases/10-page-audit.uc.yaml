@@ -1,0 +1,27 @@
+id: editor-page-audit
+title: "Audit The Editor Page For WCAG Violations"
+type: positive
+description: "Run automated WCAG checks against the full demo page and against the editor
+  toolbar specifically, in both the resting and dialog-open states."
+
+preconditions:
+  - "The demo app is running (npm start)"
+
+start_location: "http://localhost:4001"
+
+expected_result: "The page and the toolbar pass WCAG AA automated checks"
+
+steps:
+  # Resting state, whole page
+  - audit: page
+
+  # With the link dialog open
+  - locate: button "Insert Link"
+  - activate: button "Insert Link"
+  - audit: dialog "Insert Link" level "AA"
+  - keyboard: "Escape"
+
+  # With content present
+  - focus: field "Editor content"
+  - keyboard: "Audit me"
+  - audit: page level "AA"

@@ -46,6 +46,10 @@ jest.mock('@lexical/react/LexicalHistoryPlugin', () => ({
   HistoryPlugin: () => <div data-testid="history-plugin" />,
 }));
 
+jest.mock('@lexical/react/LexicalMarkdownShortcutPlugin', () => ({
+  MarkdownShortcutPlugin: () => <div data-testid="markdown-shortcut-plugin" />,
+}));
+
 jest.mock('@lexical/react/LexicalOnChangePlugin', () => ({
   OnChangePlugin: () => <div data-testid="on-change-plugin" />,
 }));
@@ -69,6 +73,16 @@ jest.mock('@lexical/html', () => ({
 
 jest.mock('../components/HeadingOutlinePlugin', () => ({
   HeadingOutlinePlugin: () => <div data-testid="heading-outline-plugin" />,
+}));
+
+jest.mock('../components/WordCountPlugin', () => ({
+  WordCountPlugin: () => <div data-testid="word-count-plugin" />,
+}));
+
+// Stub the curated transformers so the real @lexical/markdown (which pulls in
+// the mocked lexical packages above) is never loaded in this suite
+jest.mock('../utils/markdown-transformers', () => ({
+  EDITOR_TRANSFORMERS: [],
 }));
 
 // Mock ToolbarPlugin to expose setShowDocs trigger
@@ -104,8 +118,10 @@ describe('Editor Component', () => {
     expect(screen.getByTestId('history-plugin')).toBeInTheDocument();
     expect(screen.getByTestId('link-plugin')).toBeInTheDocument();
     expect(screen.getByTestId('list-plugin')).toBeInTheDocument();
+    expect(screen.getByTestId('markdown-shortcut-plugin')).toBeInTheDocument();
     expect(screen.getByTestId('on-change-plugin')).toBeInTheDocument();
     expect(screen.getByTestId('heading-outline-plugin')).toBeInTheDocument();
+    expect(screen.getByTestId('word-count-plugin')).toBeInTheDocument();
   });
 
   it('does not show docs overlay by default', () => {
