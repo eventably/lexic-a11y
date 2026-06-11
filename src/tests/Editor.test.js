@@ -71,6 +71,10 @@ jest.mock('@lexical/html', () => ({
   $generateHtmlFromNodes: () => '<p>Test HTML Output</p>',
 }));
 
+jest.mock('../components/HeadingOutlinePlugin', () => ({
+  HeadingOutlinePlugin: () => <div data-testid="heading-outline-plugin" />,
+}));
+
 jest.mock('../components/WordCountPlugin', () => ({
   WordCountPlugin: () => <div data-testid="word-count-plugin" />,
 }));
@@ -116,6 +120,7 @@ describe('Editor Component', () => {
     expect(screen.getByTestId('list-plugin')).toBeInTheDocument();
     expect(screen.getByTestId('markdown-shortcut-plugin')).toBeInTheDocument();
     expect(screen.getByTestId('on-change-plugin')).toBeInTheDocument();
+    expect(screen.getByTestId('heading-outline-plugin')).toBeInTheDocument();
     expect(screen.getByTestId('word-count-plugin')).toBeInTheDocument();
   });
 

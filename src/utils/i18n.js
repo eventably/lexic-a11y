@@ -38,6 +38,13 @@ i18n.use(initReactI18next).init({
         linkText: 'Link Text',
         cancel: 'Cancel',
         insert: 'Insert',
+        // Document outline / heading validation
+        documentOutline: 'Document Outline',
+        outlineEmpty: 'No headings yet. Headings appear here as you add them.',
+        outlineUntitled: '(untitled heading)',
+        headingWarningPrefix: 'Warning',
+        headingSkippedLevel: 'Heading level skipped: {{from}} is followed by {{to}}',
+        headingMultipleH1: 'Multiple H1 headings found ({{count}})',
         // Live word/character count
         wordCount_one: '{{count}} word',
         wordCount_other: '{{count}} words',

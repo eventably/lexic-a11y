@@ -16,6 +16,7 @@ import { useState } from 'react';
 
 import { EDITOR_TRANSFORMERS } from '../utils/markdown-transformers';
 
+import { HeadingOutlinePlugin } from './HeadingOutlinePlugin';
 import { ToolbarPlugin } from './ToolbarPlugin';
 import { WordCountPlugin } from './WordCountPlugin';
 // Temporarily comment out missing imports
@@ -104,6 +105,7 @@ export default function Editor({ onContentChange }) {
             }}
           />
         </div>
+        <HeadingOutlinePlugin />
         <WordCountPlugin />
       </div>
 
