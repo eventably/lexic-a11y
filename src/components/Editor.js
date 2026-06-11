@@ -131,6 +131,13 @@ export default function Editor({ onContentChange }) {
             <div className="editor-docs-body">
               <ul>
                 <li>
+                  <kbd>Ctrl</kbd> + <kbd>Z</kbd>: Undo
+                </li>
+                <li>
+                  <kbd>Ctrl</kbd> + <kbd>Y</kbd> (or <kbd>Ctrl</kbd> + <kbd>Shift</kbd> +{' '}
+                  <kbd>Z</kbd>): Redo
+                </li>
+                <li>
                   <kbd>Ctrl</kbd> + <kbd>B</kbd>: Bold
                 </li>
                 <li>
