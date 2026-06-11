@@ -137,7 +137,9 @@ test.describe('keyboard navigation and ARIA', () => {
 
 test.describe('accessibility scan', () => {
   test('axe finds no serious or critical violations in the editor UI', async ({ page }) => {
-    const results = await new AxeBuilder({ page }).analyze();
+    // Scope the scan to the editor component so unrelated demo-page markup
+    // can't mask or add noise to the editor's own results.
+    const results = await new AxeBuilder({ page }).include('.editor-container').analyze();
 
     const seriousOrWorse = results.violations.filter((violation) =>
       ['serious', 'critical'].includes(violation.impact),
