@@ -191,7 +191,7 @@ describe('ToolbarPlugin Component', () => {
       expect(mockEditor.dispatchCommand).toHaveBeenCalledWith('insert-table', {
         rows: '3',
         columns: '3',
-        includeHeaders: true,
+        includeHeaders: { rows: true, columns: false },
       });
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
@@ -213,7 +213,7 @@ describe('ToolbarPlugin Component', () => {
       expect(mockEditor.dispatchCommand).toHaveBeenCalledWith('insert-table', {
         rows: '2',
         columns: '5',
-        includeHeaders: false,
+        includeHeaders: { rows: false, columns: false },
       });
     });
 
