@@ -98,9 +98,11 @@ export default function Editor({ onContentChange }) {
                   .replace(/class="[^"]*"/g, '') // Remove all class attributes
                   .replace(/<(h[1-6]|p|ul|ol|li)([^>]*)>/g, '<$1>') // Clean heading, paragraph, and list tags
                   .replace(/<a([^>]*)(class="[^"]*")([^>]*)>/g, '<a$1$3>') // Clean link tags
+                  .replace(/<colgroup[^>]*>[\s\S]*?<\/colgroup>/g, '') // Drop Lexical's <colgroup>/<col> sizing markup
                   .replace(/<(table|thead|tbody|tr)([^>]*)>/g, '<$1>') // Clean table structure tags
                   .replace(/<(td|th)\s+style="[^"]*"([^>]*)>/g, '<$1$2>') // Strip inline cell styles
                   .replace(/<(td|th)\s+>/g, '<$1>') // Tidy whitespace left by attribute stripping
+                  // Header cells are all column headers (header row only), so scope="col".
                   .replace(/<th(?![^>]*\bscope=)([^>]*)>/g, '<th scope="col"$1>'); // Ensure header cells carry scope
 
                 setHtmlOutput(cleanHtml);

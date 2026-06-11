@@ -64,7 +64,10 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
     editor.dispatchCommand(INSERT_TABLE_COMMAND, {
       rows: String(Number.parseInt(tableRows, 10)),
       columns: String(Number.parseInt(tableColumns, 10)),
-      includeHeaders: tableHeaders,
+      // Header *row* only (matches the "Include header row" checkbox). Marking the
+      // first column as headers too would emit <th> row-headers that the export
+      // step can only scope as columns, mislabeling them for screen readers.
+      includeHeaders: { rows: tableHeaders, columns: false },
     });
     setTableRows('3');
     setTableColumns('3');
