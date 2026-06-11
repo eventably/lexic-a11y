@@ -55,8 +55,13 @@ jest.mock('@lexical/react/LexicalHorizontalRulePlugin', () => ({
   HorizontalRulePlugin: () => <div data-testid="horizontal-rule-plugin" />,
 }));
 
+jest.mock('@lexical/react/LexicalMarkdownShortcutPlugin', () => ({
+  MarkdownShortcutPlugin: () => <div data-testid="markdown-shortcut-plugin" />,
+}));
+
 // Capture the OnChangePlugin onChange prop so tests can exercise the export path
 const mockOnChangeCapture = {};
+
 jest.mock('@lexical/react/LexicalOnChangePlugin', () => ({
   OnChangePlugin: ({ onChange }) => {
     mockOnChangeCapture.onChange = onChange;
@@ -79,6 +84,20 @@ jest.mock('@lexical/react/LexicalListPlugin', () => ({
 
 jest.mock('@lexical/html', () => ({
   $generateHtmlFromNodes: jest.fn(() => '<p>Test HTML Output</p>'),
+}));
+
+jest.mock('../components/HeadingOutlinePlugin', () => ({
+  HeadingOutlinePlugin: () => <div data-testid="heading-outline-plugin" />,
+}));
+
+jest.mock('../components/WordCountPlugin', () => ({
+  WordCountPlugin: () => <div data-testid="word-count-plugin" />,
+}));
+
+// Stub the curated transformers so the real @lexical/markdown (which pulls in
+// the mocked lexical packages above) is never loaded in this suite
+jest.mock('../utils/markdown-transformers', () => ({
+  EDITOR_TRANSFORMERS: [],
 }));
 
 // Mock ToolbarPlugin to expose setShowDocs trigger
@@ -115,7 +134,10 @@ describe('Editor Component', () => {
     expect(screen.getByTestId('horizontal-rule-plugin')).toBeInTheDocument();
     expect(screen.getByTestId('link-plugin')).toBeInTheDocument();
     expect(screen.getByTestId('list-plugin')).toBeInTheDocument();
+    expect(screen.getByTestId('markdown-shortcut-plugin')).toBeInTheDocument();
     expect(screen.getByTestId('on-change-plugin')).toBeInTheDocument();
+    expect(screen.getByTestId('heading-outline-plugin')).toBeInTheDocument();
+    expect(screen.getByTestId('word-count-plugin')).toBeInTheDocument();
   });
 
   it('exports a clean semantic <hr> through the HTML cleanup path', () => {

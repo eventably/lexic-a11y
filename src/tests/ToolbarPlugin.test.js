@@ -114,7 +114,7 @@ describe('ToolbarPlugin Component', () => {
     }
 
     // Link button
-    expect(screen.getByLabelText('Link')).toBeInTheDocument();
+    expect(screen.getByLabelText('Insert Link')).toBeInTheDocument();
   });
 
   it('dispatches bold command when bold button is clicked', async () => {
@@ -205,7 +205,7 @@ describe('ToolbarPlugin Component', () => {
 
     renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
 
-    const linkButton = screen.getByLabelText('Link');
+    const linkButton = screen.getByLabelText('Insert Link');
     await user.click(linkButton);
 
     // Verify editor state was read to get selection

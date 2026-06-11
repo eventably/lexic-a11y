@@ -37,6 +37,10 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
   const [isStrikethrough, setIsStrikethrough] = useState(false);
   const dialogRef = useRef(null);
   const urlInputRef = useRef(null);
+  // Whether the link dialog was opened with text already selected — in that
+  // case the link applies to the restored selection and the text must NOT be
+  // re-inserted (doing so duplicated it; caught by the E2E suite)
+  const linkFromSelectionRef = useRef(false);
 
   // Helper to apply heading formatting with toggle functionality
   const setHeading = useCallback(
@@ -94,21 +98,13 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
 
       if (!mod && e.key !== 'Escape') return;
 
-      // Basic formatting shortcuts
+      // Basic formatting shortcuts.
+      // NOTE: Ctrl/Cmd+B, +I, and +U are intentionally NOT handled here —
+      // Lexical's RichTextPlugin already handles them natively. Dispatching
+      // FORMAT_TEXT_COMMAND again from this document-level listener applied
+      // the format a second time (a net no-op), a bug caught by the E2E suite.
       if (mod && !e.altKey) {
         switch (e.key.toLowerCase()) {
-          case 'b':
-            e.preventDefault();
-            editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold');
-            break;
-          case 'i':
-            e.preventDefault();
-            editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'italic');
-            break;
-          case 'u':
-            e.preventDefault();
-            editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'underline');
-            break;
           case 'k': {
             e.preventDefault();
             const url = window.prompt(t('enterUrl'));
@@ -609,16 +605,18 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
             // Get any selected text before opening dialog
             editor.getEditorState().read(() => {
               const selection = $getSelection();
+              linkFromSelectionRef.current = false;
               if ($isRangeSelection(selection)) {
                 const selectedText = selection.getTextContent();
                 if (selectedText) {
                   setLinkText(selectedText);
+                  linkFromSelectionRef.current = true;
                 }
               }
             });
             setShowLinkDialog(true);
           }}
-          aria-label={t('link')}
+          aria-label={t('insertLink')}
         >
           <svg
             className="icon-link"
@@ -643,7 +641,6 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
             />
             <path d="M8 12H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
           </svg>
-          <span className="button-text">{t('link')}</span>
         </button>
       </div>
 
@@ -815,7 +812,9 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
             aria-labelledby="link-dialog-title"
             tabIndex={-1}
           >
-            <h3 id="link-dialog-title">{t('insertLink')}</h3>
+            <h2 id="link-dialog-title" className="link-dialog-title">
+              {t('insertLink')}
+            </h2>
             <div className="link-dialog-form">
               <div className="form-group">
                 <label htmlFor="link-url">{t('url')}:</label>
@@ -869,7 +868,11 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
                         editor.update(() => {
                           const selection = $getSelection();
                           if ($isRangeSelection(selection)) {
-                            if (linkText && selection.isCollapsed()) {
+                            if (
+                              linkText &&
+                              !linkFromSelectionRef.current &&
+                              selection.isCollapsed()
+                            ) {
                               // If there's link text but no selection, insert the text with the link
                               selection.insertText(linkText);
                               // Need to get selection again after text insertion
