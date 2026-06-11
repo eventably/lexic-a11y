@@ -141,6 +141,26 @@ describe('Editor Component', () => {
     expect(exported).not.toContain('scope="row"');
   });
 
+  it('handles <thead> and styled cells with attributes before style', () => {
+    const { $generateHtmlFromNodes } = require('@lexical/html');
+    const mockOnContentChange = jest.fn();
+    renderWithI18n(<Editor onContentChange={mockOnContentChange} />);
+
+    // A <thead> must NOT be corrupted into <th scope="col"ead>, and a cell whose
+    // style attribute comes after colspan must still have its style stripped.
+    $generateHtmlFromNodes.mockReturnValueOnce(
+      '<table class="t"><thead><tr><th colspan="2" style="width:75px" class="z">Name</th></tr></thead><tbody><tr><td>Ada</td><td>Engineer</td></tr></tbody></table>',
+    );
+    mockOnChangeCapture.onChange({ read: (cb) => cb() }, {});
+
+    const exported = mockOnContentChange.mock.calls[0][0];
+    expect(exported).toContain('<thead>');
+    expect(exported).not.toMatch(/scope="col"ead/);
+    expect(exported).not.toContain('style=');
+    // colspan is preserved and scope is added to the header cell.
+    expect(exported).toContain('<th scope="col" colspan="2">');
+  });
+
   it('does not show docs overlay by default', () => {
     const mockOnContentChange = jest.fn();
     renderWithI18n(<Editor onContentChange={mockOnContentChange} />);

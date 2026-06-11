@@ -100,10 +100,11 @@ export default function Editor({ onContentChange }) {
                   .replace(/<a([^>]*)(class="[^"]*")([^>]*)>/g, '<a$1$3>') // Clean link tags
                   .replace(/<colgroup[^>]*>[\s\S]*?<\/colgroup>/g, '') // Drop Lexical's <colgroup>/<col> sizing markup
                   .replace(/<(table|thead|tbody|tr)([^>]*)>/g, '<$1>') // Clean table structure tags
-                  .replace(/<(td|th)\s+style="[^"]*"([^>]*)>/g, '<$1$2>') // Strip inline cell styles
-                  .replace(/<(td|th)\s+>/g, '<$1>') // Tidy whitespace left by attribute stripping
+                  .replace(/(<(?:td|th)\b[^>]*?)\s+style="[^"]*"/g, '$1') // Strip inline cell styles at any attribute position
+                  .replace(/(<(?:td|th)\b[^>]*?)\s+>/g, '$1>') // Tidy trailing whitespace left by attribute stripping
                   // Header cells are all column headers (header row only), so scope="col".
-                  .replace(/<th(?![^>]*\bscope=)([^>]*)>/g, '<th scope="col"$1>'); // Ensure header cells carry scope
+                  // The (?![a-z]) guard keeps this from matching <thead>.
+                  .replace(/<th(?![a-z])(?![^>]*\bscope=)([^>]*)>/g, '<th scope="col"$1>'); // Ensure header cells carry scope
 
                 setHtmlOutput(cleanHtml);
                 onContentChange(cleanHtml);
