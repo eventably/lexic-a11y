@@ -149,6 +149,9 @@ export default function Editor({ onContentChange }) {
                   <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>7</kbd>: Numbered List
                 </li>
                 <li>
+                  <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Q</kbd>: Blockquote
+                </li>
+                <li>
                   <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>1</kbd>: Heading 1
                 </li>
                 <li>

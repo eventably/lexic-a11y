@@ -17,6 +17,7 @@ i18n.use(initReactI18next).init({
         heading5: 'H5',
         heading6: 'H6',
         insertHorizontalRule: 'Insert Horizontal Rule',
+        blockquote: 'Blockquote',
         uploadImage: 'Upload Image',
         insertImage: 'Insert Image',
         insertTable: 'Insert Table',

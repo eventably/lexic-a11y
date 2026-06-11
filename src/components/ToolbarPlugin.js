@@ -9,7 +9,12 @@ import {
 } from '@lexical/list';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { INSERT_HORIZONTAL_RULE_COMMAND } from '@lexical/react/LexicalHorizontalRuleNode';
-import { $createHeadingNode, $isHeadingNode } from '@lexical/rich-text';
+import {
+  $createHeadingNode,
+  $createQuoteNode,
+  $isHeadingNode,
+  $isQuoteNode,
+} from '@lexical/rich-text';
 import { $setBlocksType } from '@lexical/selection';
 import {
   $createParagraphNode,
@@ -35,6 +40,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
   const [isItalic, setIsItalic] = useState(false);
   const [isUnderline, setIsUnderline] = useState(false);
   const [isStrikethrough, setIsStrikethrough] = useState(false);
+  const [isQuoteActive, setIsQuoteActive] = useState(false);
   const dialogRef = useRef(null);
   const urlInputRef = useRef(null);
   // Whether the link dialog was opened with text already selected — in that
@@ -90,6 +96,34 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
     [editor],
   );
 
+  // Helper to toggle blockquote formatting (quote <-> paragraph)
+  const toggleQuote = useCallback(() => {
+    editor.update(() => {
+      const selection = $getSelection();
+      if (!$isRangeSelection(selection)) return;
+
+      // Determine whether the selection is already inside a quote block
+      const anchorNode = selection.anchor.getNode();
+      const focusNode = selection.focus.getNode();
+      const isAlreadyQuote =
+        $isQuoteNode(anchorNode) ||
+        $isQuoteNode(anchorNode.getParent()) ||
+        $isQuoteNode(focusNode) ||
+        $isQuoteNode(focusNode.getParent());
+
+      try {
+        if (isAlreadyQuote) {
+          // Toggle back to a paragraph when already a quote
+          $setBlocksType(selection, () => $createParagraphNode());
+        } else {
+          $setBlocksType(selection, () => $createQuoteNode());
+        }
+      } catch (error) {
+        console.error('Error applying blockquote:', error);
+      }
+    });
+  }, [editor]);
+
   // Register keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -116,6 +150,13 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
           case 'd':
             e.preventDefault();
             setShowDocs((prevState) => !prevState);
+            break;
+          case 'q':
+            if (e.shiftKey) {
+              // Ctrl/Cmd + Shift + Q toggles blockquote
+              e.preventDefault();
+              toggleQuote();
+            }
             break;
           case '8':
             if (e.shiftKey) {
@@ -171,7 +212,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [editor, setShowDocs, t, setHeading]);
+  }, [editor, setShowDocs, t, setHeading, toggleQuote]);
 
   // Register Escape key to close link dialog
   useEffect(() => {
@@ -232,6 +273,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
               setIsItalic(false);
               setIsUnderline(false);
               setIsStrikethrough(false);
+              setIsQuoteActive(false);
               return;
             }
 
@@ -274,6 +316,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
             let headingTag = null;
             let orderedListActive = false;
             let unorderedListActive = false;
+            let quoteActive = false;
 
             try {
               // Get the anchor node safely
@@ -304,6 +347,15 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
 
               // Find headings
               headingTag = findHeadingTag(anchorNode);
+
+              // Detect whether the selection is inside a quote block. Check both
+              // anchor and focus so the active state matches toggleQuote's logic.
+              const focusNode = selection.focus.getNode();
+              quoteActive =
+                $isQuoteNode(anchorNode) ||
+                $isQuoteNode(anchorNode.getParent()) ||
+                $isQuoteNode(focusNode) ||
+                $isQuoteNode(focusNode.getParent());
 
               // Helper to safely get parent
               const getParentSafely = (node) => {
@@ -352,6 +404,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
             setActiveHeadingTag(headingTag);
             setIsOrderedListActive(orderedListActive);
             setIsUnorderedListActive(unorderedListActive);
+            setIsQuoteActive(quoteActive);
           } catch (_e) {
             // Reset all states if there's an error
             setActiveHeadingTag(null);
@@ -361,6 +414,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
             setIsItalic(false);
             setIsUnderline(false);
             setIsStrikethrough(false);
+            setIsQuoteActive(false);
           }
         });
       } catch (_error) {
@@ -595,6 +649,33 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
           aria-pressed={activeHeadingTag === 'h6' ? true : false}
         >
           H6
+        </button>
+      </div>
+
+      <div className="toolbar-group">
+        <button
+          onClick={toggleQuote}
+          aria-label={t('blockquote')}
+          className={`quote-button ${isQuoteActive ? 'active' : ''}`}
+          aria-pressed={isQuoteActive}
+        >
+          <svg
+            className="icon-quote"
+            aria-hidden="true"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M7 7H10V12C10 14 9 16 6 17M14 7H17V12C17 14 16 16 13 17"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
         </button>
       </div>
 
