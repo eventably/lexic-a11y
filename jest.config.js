@@ -9,6 +9,9 @@ module.exports = {
   transform: {
     '^.+\\.(js|jsx)$': 'babel-jest',
   },
+  // The @afixt packages (and their uuid dependency) ship ESM only —
+  // let babel-jest transpile them
+  transformIgnorePatterns: ['/node_modules/(?!(@afixt/|uuid/))'],
   collectCoverage: true,
   coverageReporters: ['text', 'lcov'],
   coverageDirectory: 'coverage',

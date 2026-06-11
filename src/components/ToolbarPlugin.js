@@ -615,7 +615,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
             });
             setShowLinkDialog(true);
           }}
-          aria-label={t('link')}
+          aria-label={t('insertLink')}
         >
           <svg
             className="icon-link"
@@ -640,7 +640,6 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
             />
             <path d="M8 12H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
           </svg>
-          <span className="button-text">{t('link')}</span>
         </button>
       </div>
 
@@ -791,7 +790,9 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
             aria-labelledby="link-dialog-title"
             tabIndex={-1}
           >
-            <h3 id="link-dialog-title">{t('insertLink')}</h3>
+            <h2 id="link-dialog-title" className="link-dialog-title">
+              {t('insertLink')}
+            </h2>
             <div className="link-dialog-form">
               <div className="form-group">
                 <label htmlFor="link-url">{t('url')}:</label>

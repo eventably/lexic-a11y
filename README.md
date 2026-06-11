@@ -70,7 +70,7 @@ editing more accessible to all users.
 - npm v10+ (enforced via `engine-strict=true` in `.npmrc`)
 - React (v16.8+, v17.0.0+, or v18.0.0+ for Hooks support)
 - Homebrew (macOS/Linux) — used by the bootstrap script to install security
-  binaries (`gitleaks`, `osv-scanner`, `semgrep`, `lychee`)
+  binaries (`trufflehog`, `osv-scanner`, `semgrep`, `lychee`)
 
 ### Steps
 
@@ -270,7 +270,8 @@ We welcome contributions from the community! If you'd like to contribute:
 
 - **Fork & branch:** Branch off `develop` (`feature/<issue>-<slug>`).
 - **Before pushing:** Run `npm run check:all` — this runs lint, tests, build,
-  duplication check, bundle size, license compliance, `npm audit`, and gitleaks.
+  duplication check, bundle size, license compliance, `npm audit`, and
+  trufflehog.
 - **Commit style:** [Conventional Commits](https://www.conventionalcommits.org/)
   (enforced by commitlint via the `commit-msg` hook).
 - **Open issues:** Use the repository's issue tracker for bugs or feature
@@ -293,10 +294,17 @@ We welcome contributions from the community! If you'd like to contribute:
 | `npm run dupes`         | Run jscpd duplication check                   |
 | `npm run size`          | Enforce `size-limit` budgets                  |
 | `npm run links`         | Check markdown links with `lychee`            |
-| `npm run security`      | Run npm audit + OSV + Semgrep + gitleaks      |
+| `npm run security`      | Run npm audit + OSV + Semgrep + trufflehog    |
 | `npm run license:check` | Verify production dependency licenses         |
 | `npm run check`         | Lint + stylelint + markdown + format:check    |
 | `npm run check:all`     | Full local gate (used by the `pre-push` hook) |
+
+> **Accessibility test tooling:** `npm test` runs automated WCAG assertions via
+> [`@afixt/a11y-assert`](https://www.npmjs.com/package/@afixt/a11y-assert), a
+> first-party Afixt dev dependency. It declares `engines.node >= 22`, so run the
+> test suite on Node 22+ (the version CI uses); Node 20 only emits an
+> `EBADENGINE` warning. It is a `devDependency` and is not part of the published
+> package or its production `license:check`.
 
 ### Architecture decisions
 
