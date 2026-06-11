@@ -1,4 +1,5 @@
 // ToolbarPlugin.js
+import { $createCodeNode, $isCodeNode } from '@lexical/code';
 import { TOGGLE_LINK_COMMAND } from '@lexical/link';
 import {
   $isListItemNode,
@@ -8,15 +9,27 @@ import {
   REMOVE_LIST_COMMAND,
 } from '@lexical/list';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
-import { $createHeadingNode, $isHeadingNode } from '@lexical/rich-text';
+import { INSERT_HORIZONTAL_RULE_COMMAND } from '@lexical/react/LexicalHorizontalRuleNode';
+import {
+  $createHeadingNode,
+  $createQuoteNode,
+  $isHeadingNode,
+  $isQuoteNode,
+} from '@lexical/rich-text';
 import { $setBlocksType } from '@lexical/selection';
 import {
   $createParagraphNode,
   $getSelection,
   $isRangeSelection,
+  $isTextNode,
+  CAN_REDO_COMMAND,
+  CAN_UNDO_COMMAND,
   COMMAND_PRIORITY_HIGH,
+  COMMAND_PRIORITY_LOW,
   FORMAT_TEXT_COMMAND,
   KEY_ESCAPE_COMMAND,
+  REDO_COMMAND,
+  UNDO_COMMAND,
 } from 'lexical';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -34,8 +47,81 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
   const [isItalic, setIsItalic] = useState(false);
   const [isUnderline, setIsUnderline] = useState(false);
   const [isStrikethrough, setIsStrikethrough] = useState(false);
+  const [isInlineCode, setIsInlineCode] = useState(false);
+  const [isCodeBlockActive, setIsCodeBlockActive] = useState(false);
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
+  const [isQuoteActive, setIsQuoteActive] = useState(false);
   const dialogRef = useRef(null);
   const urlInputRef = useRef(null);
+  const toolbarRef = useRef(null);
+  const rovingIndexRef = useRef(0);
+
+  // All focusable toolbar controls, in DOM order (excludes dialog controls)
+  const getToolbarButtons = useCallback(() => {
+    if (!toolbarRef.current) return [];
+    return Array.from(toolbarRef.current.querySelectorAll('.toolbar-group > button')).filter(
+      (button) => !button.disabled,
+    );
+  }, []);
+
+  // WAI-ARIA toolbar pattern: a single tab stop with a roving tabindex.
+  // Exactly one control keeps tabindex="0"; the rest get tabindex="-1".
+  const applyRovingTabIndex = useCallback(() => {
+    const buttons = getToolbarButtons();
+    if (buttons.length === 0) return;
+    if (rovingIndexRef.current >= buttons.length) {
+      rovingIndexRef.current = 0;
+    }
+    buttons.forEach((button, index) => {
+      button.tabIndex = index === rovingIndexRef.current ? 0 : -1;
+    });
+  }, [getToolbarButtons]);
+
+  // Re-apply after every render so newly added/enabled buttons stay managed
+  useEffect(applyRovingTabIndex);
+
+  // Arrow-key navigation between toolbar controls (wraps), Home/End jump
+  const handleToolbarKeyDown = (e) => {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return;
+
+    const buttons = getToolbarButtons();
+    if (buttons.length === 0) return;
+
+    // Only handle when focus is on a toolbar control (not the link dialog)
+    const currentIndex = buttons.indexOf(document.activeElement);
+    if (currentIndex === -1) return;
+
+    e.preventDefault();
+    let nextIndex;
+    if (e.key === 'ArrowRight') {
+      nextIndex = (currentIndex + 1) % buttons.length;
+    } else if (e.key === 'ArrowLeft') {
+      nextIndex = (currentIndex - 1 + buttons.length) % buttons.length;
+    } else if (e.key === 'Home') {
+      nextIndex = 0;
+    } else {
+      nextIndex = buttons.length - 1;
+    }
+
+    rovingIndexRef.current = nextIndex;
+    applyRovingTabIndex();
+    buttons[nextIndex].focus();
+  };
+
+  // Keep the roving index in sync when a control gains focus (e.g. via click)
+  const handleToolbarFocus = (e) => {
+    const buttons = getToolbarButtons();
+    const index = buttons.indexOf(e.target);
+    if (index !== -1) {
+      rovingIndexRef.current = index;
+      applyRovingTabIndex();
+    }
+  };
+  // Whether the link dialog was opened with text already selected — in that
+  // case the link applies to the restored selection and the text must NOT be
+  // re-inserted (doing so duplicated it; caught by the E2E suite)
+  const linkFromSelectionRef = useRef(false);
 
   // Helper to apply heading formatting with toggle functionality
   const setHeading = useCallback(
@@ -85,6 +171,107 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
     [editor],
   );
 
+  // Helper to toggle a code block (code <-> paragraph)
+  const toggleCodeBlock = useCallback(() => {
+    editor.update(() => {
+      const selection = $getSelection();
+      if (!$isRangeSelection(selection)) return;
+
+      // Determine whether the selection is already inside a code block
+      const anchorNode = selection.anchor.getNode();
+      const focusNode = selection.focus.getNode();
+      const isAlreadyCode =
+        $isCodeNode(anchorNode) ||
+        $isCodeNode(anchorNode.getParent()) ||
+        $isCodeNode(focusNode) ||
+        $isCodeNode(focusNode.getParent());
+
+      try {
+        if (isAlreadyCode) {
+          // Toggle back to a paragraph when already a code block
+          $setBlocksType(selection, () => $createParagraphNode());
+        } else {
+          $setBlocksType(selection, () => $createCodeNode());
+        }
+      } catch (error) {
+        console.error('Error applying code block:', error);
+      }
+    });
+  }, [editor]);
+
+  // Strip all inline marks from the selection and reset blocks to paragraphs
+  const clearFormatting = useCallback(() => {
+    // $setBlocksType cannot unwrap list items, so detect a list selection and
+    // remove it via the list command before resetting the remaining blocks.
+    let inList = false;
+    editor.getEditorState().read(() => {
+      const selection = $getSelection();
+      if ($isRangeSelection(selection)) {
+        inList = selection.getNodes().some((node) => {
+          const parent = node.getParent ? node.getParent() : null;
+          return (
+            $isListNode(node) ||
+            $isListItemNode(node) ||
+            $isListNode(parent) ||
+            $isListItemNode(parent)
+          );
+        });
+      }
+    });
+    if (inList) {
+      editor.dispatchCommand(REMOVE_LIST_COMMAND, undefined);
+    }
+
+    editor.update(() => {
+      const selection = $getSelection();
+      if (!$isRangeSelection(selection)) return;
+
+      try {
+        // Clear inline text formats (bold/italic/underline/strikethrough/code)
+        // and any inline styles on the selected text nodes
+        selection.getNodes().forEach((node) => {
+          if ($isTextNode(node)) {
+            node.setFormat(0);
+            node.setStyle('');
+          }
+        });
+
+        // Reset block-level formatting back to plain paragraphs
+        $setBlocksType(selection, () => $createParagraphNode());
+      } catch (error) {
+        console.error('Error clearing formatting:', error);
+      }
+    });
+  }, [editor]);
+
+  // Helper to toggle blockquote formatting (quote <-> paragraph)
+  const toggleQuote = useCallback(() => {
+    editor.update(() => {
+      const selection = $getSelection();
+      if (!$isRangeSelection(selection)) return;
+
+      // Determine whether the selection is already inside a quote block
+      const anchorNode = selection.anchor.getNode();
+      const focusNode = selection.focus.getNode();
+      const isAlreadyQuote =
+        $isQuoteNode(anchorNode) ||
+        $isQuoteNode(anchorNode.getParent()) ||
+        $isQuoteNode(focusNode) ||
+        $isQuoteNode(focusNode.getParent());
+
+      try {
+        if (isAlreadyQuote) {
+          // Toggle back to a paragraph when already a quote
+          $setBlocksType(selection, () => $createParagraphNode());
+        } else {
+          $setBlocksType(selection, () => $createQuoteNode());
+        }
+      } catch (error) {
+        console.error('Error applying blockquote:', error);
+      }
+    });
+  }, [editor]);
+
   // Register keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -93,21 +280,13 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
 
       if (!mod && e.key !== 'Escape') return;
 
-      // Basic formatting shortcuts
+      // Basic formatting shortcuts.
+      // NOTE: Ctrl/Cmd+B, +I, and +U are intentionally NOT handled here —
+      // Lexical's RichTextPlugin already handles them natively. Dispatching
+      // FORMAT_TEXT_COMMAND again from this document-level listener applied
+      // the format a second time (a net no-op), a bug caught by the E2E suite.
       if (mod && !e.altKey) {
         switch (e.key.toLowerCase()) {
-          case 'b':
-            e.preventDefault();
-            editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold');
-            break;
-          case 'i':
-            e.preventDefault();
-            editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'italic');
-            break;
-          case 'u':
-            e.preventDefault();
-            editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'underline');
-            break;
           case 'k': {
             e.preventDefault();
             const url = window.prompt(t('enterUrl'));
@@ -119,6 +298,13 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
           case 'd':
             e.preventDefault();
             setShowDocs((prevState) => !prevState);
+            break;
+          case 'q':
+            if (e.shiftKey) {
+              // Ctrl/Cmd + Shift + Q toggles blockquote
+              e.preventDefault();
+              toggleQuote();
+            }
             break;
           case '8':
             if (e.shiftKey) {
@@ -174,7 +360,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [editor, setShowDocs, t, setHeading]);
+  }, [editor, setShowDocs, t, setHeading, toggleQuote]);
 
   // Register Escape key to close link dialog
   useEffect(() => {
@@ -190,6 +376,32 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
       COMMAND_PRIORITY_HIGH,
     );
   }, [editor, showLinkDialog]);
+
+  // Track undo/redo availability so the buttons can enable/disable
+  useEffect(() => {
+    const removeCanUndoListener = editor.registerCommand(
+      CAN_UNDO_COMMAND,
+      (payload) => {
+        setCanUndo(payload);
+        return false; // Don't block other handlers
+      },
+      COMMAND_PRIORITY_LOW,
+    );
+
+    const removeCanRedoListener = editor.registerCommand(
+      CAN_REDO_COMMAND,
+      (payload) => {
+        setCanRedo(payload);
+        return false; // Don't block other handlers
+      },
+      COMMAND_PRIORITY_LOW,
+    );
+
+    return () => {
+      removeCanUndoListener();
+      removeCanRedoListener();
+    };
+  }, [editor]);
 
   // Helper function to toggle list formats
   const toggleList = useCallback(
@@ -235,6 +447,9 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
               setIsItalic(false);
               setIsUnderline(false);
               setIsStrikethrough(false);
+              setIsInlineCode(false);
+              setIsCodeBlockActive(false);
+              setIsQuoteActive(false);
               return;
             }
 
@@ -250,6 +465,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
               let italicActive = false;
               let underlineActive = false;
               let strikethroughActive = false;
+              let inlineCodeActive = false;
 
               if (hasTextAndSelection) {
                 // In Lexical, format types are represented by numerical values
@@ -258,6 +474,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
                 italicActive = selection.hasFormat('italic');
                 underlineActive = selection.hasFormat('underline');
                 strikethroughActive = selection.hasFormat('strikethrough');
+                inlineCodeActive = selection.hasFormat('code');
               }
 
               // Update state for each format type
@@ -265,18 +482,22 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
               setIsItalic(italicActive);
               setIsUnderline(underlineActive);
               setIsStrikethrough(strikethroughActive);
+              setIsInlineCode(inlineCodeActive);
             } catch (_error) {
               // Reset formatting state on error
               setIsBold(false);
               setIsItalic(false);
               setIsUnderline(false);
               setIsStrikethrough(false);
+              setIsInlineCode(false);
             }
 
             // Check for headings, lists, etc.
             let headingTag = null;
             let orderedListActive = false;
             let unorderedListActive = false;
+            let codeBlockActive = false;
+            let quoteActive = false;
 
             try {
               // Get the anchor node safely
@@ -307,6 +528,22 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
 
               // Find headings
               headingTag = findHeadingTag(anchorNode);
+
+              // Detect whether the selection is inside a code block. Check both
+              // anchor and focus so the active state matches toggleCodeBlock's logic.
+              const focusNode = selection.focus.getNode();
+              codeBlockActive =
+                $isCodeNode(anchorNode) ||
+                $isCodeNode(anchorNode.getParent()) ||
+                $isCodeNode(focusNode) ||
+                $isCodeNode(focusNode.getParent());
+              // Detect whether the selection is inside a quote block. Check both
+              // anchor and focus so the active state matches toggleQuote's logic.
+              quoteActive =
+                $isQuoteNode(anchorNode) ||
+                $isQuoteNode(anchorNode.getParent()) ||
+                $isQuoteNode(focusNode) ||
+                $isQuoteNode(focusNode.getParent());
 
               // Helper to safely get parent
               const getParentSafely = (node) => {
@@ -355,6 +592,8 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
             setActiveHeadingTag(headingTag);
             setIsOrderedListActive(orderedListActive);
             setIsUnorderedListActive(unorderedListActive);
+            setIsCodeBlockActive(codeBlockActive);
+            setIsQuoteActive(quoteActive);
           } catch (_e) {
             // Reset all states if there's an error
             setActiveHeadingTag(null);
@@ -364,6 +603,9 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
             setIsItalic(false);
             setIsUnderline(false);
             setIsStrikethrough(false);
+            setIsInlineCode(false);
+            setIsCodeBlockActive(false);
+            setIsQuoteActive(false);
           }
         });
       } catch (_error) {
@@ -408,7 +650,87 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
   }, [showLinkDialog]);
 
   return (
-    <div className="editor-toolbar" role="toolbar" aria-label={t('editorToolbar')}>
+    <div
+      ref={toolbarRef}
+      className="editor-toolbar"
+      role="toolbar"
+      aria-label={t('editorToolbar')}
+      aria-orientation="horizontal"
+      onKeyDown={handleToolbarKeyDown}
+      onFocus={handleToolbarFocus}
+    >
+      <div className="toolbar-group">
+        <button
+          type="button"
+          onClick={() => {
+            // aria-disabled keeps the button focusable/announced; no-op when unavailable.
+            if (canUndo) editor.dispatchCommand(UNDO_COMMAND, undefined);
+          }}
+          aria-label={t('undo')}
+          className="undo-button"
+          aria-disabled={!canUndo}
+        >
+          <svg
+            className="icon-undo"
+            aria-hidden="true"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M9 14L4 9L9 4"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M4 9H15C17.7614 9 20 11.2386 20 14C20 16.7614 17.7614 19 15 19H8"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            if (canRedo) editor.dispatchCommand(REDO_COMMAND, undefined);
+          }}
+          aria-label={t('redo')}
+          className="redo-button"
+          aria-disabled={!canRedo}
+        >
+          <svg
+            className="icon-redo"
+            aria-hidden="true"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M15 14L20 9L15 4"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M20 9H9C6.23858 9 4 11.2386 4 14C4 16.7614 6.23858 19 9 19H16"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
+      </div>
+
       <div className="toolbar-group">
         <button
           onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold')}
@@ -548,6 +870,99 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
             />
           </svg>
         </button>
+        <button
+          onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'code')}
+          aria-label={t('inlineCode')}
+          className={isInlineCode ? 'active' : ''}
+          aria-pressed={isInlineCode}
+        >
+          <svg
+            className="icon-inline-code"
+            aria-hidden="true"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M8 6L2 12L8 18"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M16 6L22 12L16 18"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
+        <button
+          onClick={toggleCodeBlock}
+          aria-label={t('codeBlock')}
+          className={`code-block-button ${isCodeBlockActive ? 'active' : ''}`}
+          aria-pressed={isCodeBlockActive}
+        >
+          <svg
+            className="icon-code-block"
+            aria-hidden="true"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <rect x="3" y="4" width="18" height="16" rx="2" stroke="currentColor" strokeWidth="2" />
+            <path
+              d="M9 10L7 12L9 14"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M15 10L17 12L15 14"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
+        <button
+          onClick={clearFormatting}
+          aria-label={t('clearFormatting')}
+          className="clear-formatting-button"
+        >
+          <svg
+            className="icon-clear-formatting"
+            aria-hidden="true"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M6 4H20M11 4L7 20"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M15 13L21 19M21 13L15 19"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
       </div>
 
       <div className="toolbar-group">
@@ -603,21 +1018,50 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
 
       <div className="toolbar-group">
         <button
+          onClick={toggleQuote}
+          aria-label={t('blockquote')}
+          className={`quote-button ${isQuoteActive ? 'active' : ''}`}
+          aria-pressed={isQuoteActive}
+        >
+          <svg
+            className="icon-quote"
+            aria-hidden="true"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M7 7H10V12C10 14 9 16 6 17M14 7H17V12C17 14 16 16 13 17"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
+      </div>
+
+      <div className="toolbar-group">
+        <button
           className="link-button"
           onClick={() => {
             // Get any selected text before opening dialog
             editor.getEditorState().read(() => {
               const selection = $getSelection();
+              linkFromSelectionRef.current = false;
               if ($isRangeSelection(selection)) {
                 const selectedText = selection.getTextContent();
                 if (selectedText) {
                   setLinkText(selectedText);
+                  linkFromSelectionRef.current = true;
                 }
               }
             });
             setShowLinkDialog(true);
           }}
-          aria-label={t('link')}
+          aria-label={t('insertLink')}
         >
           <svg
             className="icon-link"
@@ -642,7 +1086,6 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
             />
             <path d="M8 12H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
           </svg>
-          <span className="button-text">{t('link')}</span>
         </button>
       </div>
 
@@ -746,6 +1189,27 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
         </button>
       </div>
 
+      <div className="toolbar-group">
+        <button
+          type="button"
+          onClick={() => editor.dispatchCommand(INSERT_HORIZONTAL_RULE_COMMAND, undefined)}
+          aria-label={t('insertHorizontalRule')}
+          className="horizontal-rule-button"
+        >
+          <svg
+            className="icon-horizontal-rule"
+            aria-hidden="true"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path d="M3 12H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+        </button>
+      </div>
+
       <div className="toolbar-group toolbar-right">
         <button
           onClick={() => setShowDocs((prevState) => !prevState)}
@@ -793,7 +1257,9 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
             aria-labelledby="link-dialog-title"
             tabIndex={-1}
           >
-            <h3 id="link-dialog-title">{t('insertLink')}</h3>
+            <h2 id="link-dialog-title" className="link-dialog-title">
+              {t('insertLink')}
+            </h2>
             <div className="link-dialog-form">
               <div className="form-group">
                 <label htmlFor="link-url">{t('url')}:</label>
@@ -847,7 +1313,11 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
                         editor.update(() => {
                           const selection = $getSelection();
                           if ($isRangeSelection(selection)) {
-                            if (linkText && selection.isCollapsed()) {
+                            if (
+                              linkText &&
+                              !linkFromSelectionRef.current &&
+                              selection.isCollapsed()
+                            ) {
                               // If there's link text but no selection, insert the text with the link
                               selection.insertText(linkText);
                               // Need to get selection again after text insertion
