@@ -1,4 +1,4 @@
-// markdownTransformers.js
+// markdown-transformers.js
 import {
   BOLD_ITALIC_STAR,
   BOLD_ITALIC_UNDERSCORE,

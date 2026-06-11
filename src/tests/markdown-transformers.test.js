@@ -48,4 +48,19 @@ describe('EDITOR_TRANSFORMERS', () => {
     expect(EDITOR_TRANSFORMERS).not.toContain(INLINE_CODE);
     expect(EDITOR_TRANSFORMERS).not.toContain(HIGHLIGHT);
   });
+
+  it('wires real transformers whose triggers fire on the expected markdown', () => {
+    // Behavioral check against the actual @lexical/markdown transformer objects:
+    // the block triggers must recognize the markdown the user types.
+    const heading = EDITOR_TRANSFORMERS.find((t) => t === HEADING);
+    const unordered = EDITOR_TRANSFORMERS.find((t) => t === UNORDERED_LIST);
+    const ordered = EDITOR_TRANSFORMERS.find((t) => t === ORDERED_LIST);
+
+    expect(heading.regExp.test('# ')).toBe(true);
+    expect(heading.regExp.test('### ')).toBe(true);
+    expect(heading.regExp.test('plain text')).toBe(false);
+
+    expect(unordered.regExp.test('- ')).toBe(true);
+    expect(ordered.regExp.test('1. ')).toBe(true);
+  });
 });
