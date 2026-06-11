@@ -8,7 +8,13 @@ import {
   REMOVE_LIST_COMMAND,
 } from '@lexical/list';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
-import { $createHeadingNode, $isHeadingNode } from '@lexical/rich-text';
+import { INSERT_HORIZONTAL_RULE_COMMAND } from '@lexical/react/LexicalHorizontalRuleNode';
+import {
+  $createHeadingNode,
+  $createQuoteNode,
+  $isHeadingNode,
+  $isQuoteNode,
+} from '@lexical/rich-text';
 import { $setBlocksType } from '@lexical/selection';
 import {
   $createParagraphNode,
@@ -41,8 +47,13 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
   const [isStrikethrough, setIsStrikethrough] = useState(false);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
+  const [isQuoteActive, setIsQuoteActive] = useState(false);
   const dialogRef = useRef(null);
   const urlInputRef = useRef(null);
+  // Whether the link dialog was opened with text already selected — in that
+  // case the link applies to the restored selection and the text must NOT be
+  // re-inserted (doing so duplicated it; caught by the E2E suite)
+  const linkFromSelectionRef = useRef(false);
 
   // Helper to apply heading formatting with toggle functionality
   const setHeading = useCallback(
@@ -92,6 +103,34 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
     [editor],
   );
 
+  // Helper to toggle blockquote formatting (quote <-> paragraph)
+  const toggleQuote = useCallback(() => {
+    editor.update(() => {
+      const selection = $getSelection();
+      if (!$isRangeSelection(selection)) return;
+
+      // Determine whether the selection is already inside a quote block
+      const anchorNode = selection.anchor.getNode();
+      const focusNode = selection.focus.getNode();
+      const isAlreadyQuote =
+        $isQuoteNode(anchorNode) ||
+        $isQuoteNode(anchorNode.getParent()) ||
+        $isQuoteNode(focusNode) ||
+        $isQuoteNode(focusNode.getParent());
+
+      try {
+        if (isAlreadyQuote) {
+          // Toggle back to a paragraph when already a quote
+          $setBlocksType(selection, () => $createParagraphNode());
+        } else {
+          $setBlocksType(selection, () => $createQuoteNode());
+        }
+      } catch (error) {
+        console.error('Error applying blockquote:', error);
+      }
+    });
+  }, [editor]);
+
   // Register keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -100,21 +139,13 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
 
       if (!mod && e.key !== 'Escape') return;
 
-      // Basic formatting shortcuts
+      // Basic formatting shortcuts.
+      // NOTE: Ctrl/Cmd+B, +I, and +U are intentionally NOT handled here —
+      // Lexical's RichTextPlugin already handles them natively. Dispatching
+      // FORMAT_TEXT_COMMAND again from this document-level listener applied
+      // the format a second time (a net no-op), a bug caught by the E2E suite.
       if (mod && !e.altKey) {
         switch (e.key.toLowerCase()) {
-          case 'b':
-            e.preventDefault();
-            editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold');
-            break;
-          case 'i':
-            e.preventDefault();
-            editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'italic');
-            break;
-          case 'u':
-            e.preventDefault();
-            editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'underline');
-            break;
           case 'k': {
             e.preventDefault();
             const url = window.prompt(t('enterUrl'));
@@ -126,6 +157,13 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
           case 'd':
             e.preventDefault();
             setShowDocs((prevState) => !prevState);
+            break;
+          case 'q':
+            if (e.shiftKey) {
+              // Ctrl/Cmd + Shift + Q toggles blockquote
+              e.preventDefault();
+              toggleQuote();
+            }
             break;
           case '8':
             if (e.shiftKey) {
@@ -181,7 +219,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [editor, setShowDocs, t, setHeading]);
+  }, [editor, setShowDocs, t, setHeading, toggleQuote]);
 
   // Register Escape key to close link dialog
   useEffect(() => {
@@ -268,6 +306,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
               setIsItalic(false);
               setIsUnderline(false);
               setIsStrikethrough(false);
+              setIsQuoteActive(false);
               return;
             }
 
@@ -310,6 +349,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
             let headingTag = null;
             let orderedListActive = false;
             let unorderedListActive = false;
+            let quoteActive = false;
 
             try {
               // Get the anchor node safely
@@ -340,6 +380,15 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
 
               // Find headings
               headingTag = findHeadingTag(anchorNode);
+
+              // Detect whether the selection is inside a quote block. Check both
+              // anchor and focus so the active state matches toggleQuote's logic.
+              const focusNode = selection.focus.getNode();
+              quoteActive =
+                $isQuoteNode(anchorNode) ||
+                $isQuoteNode(anchorNode.getParent()) ||
+                $isQuoteNode(focusNode) ||
+                $isQuoteNode(focusNode.getParent());
 
               // Helper to safely get parent
               const getParentSafely = (node) => {
@@ -388,6 +437,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
             setActiveHeadingTag(headingTag);
             setIsOrderedListActive(orderedListActive);
             setIsUnorderedListActive(unorderedListActive);
+            setIsQuoteActive(quoteActive);
           } catch (_e) {
             // Reset all states if there's an error
             setActiveHeadingTag(null);
@@ -397,6 +447,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
             setIsItalic(false);
             setIsUnderline(false);
             setIsStrikethrough(false);
+            setIsQuoteActive(false);
           }
         });
       } catch (_error) {
@@ -708,21 +759,50 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
 
       <div className="toolbar-group">
         <button
+          onClick={toggleQuote}
+          aria-label={t('blockquote')}
+          className={`quote-button ${isQuoteActive ? 'active' : ''}`}
+          aria-pressed={isQuoteActive}
+        >
+          <svg
+            className="icon-quote"
+            aria-hidden="true"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M7 7H10V12C10 14 9 16 6 17M14 7H17V12C17 14 16 16 13 17"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
+      </div>
+
+      <div className="toolbar-group">
+        <button
           className="link-button"
           onClick={() => {
             // Get any selected text before opening dialog
             editor.getEditorState().read(() => {
               const selection = $getSelection();
+              linkFromSelectionRef.current = false;
               if ($isRangeSelection(selection)) {
                 const selectedText = selection.getTextContent();
                 if (selectedText) {
                   setLinkText(selectedText);
+                  linkFromSelectionRef.current = true;
                 }
               }
             });
             setShowLinkDialog(true);
           }}
-          aria-label={t('link')}
+          aria-label={t('insertLink')}
         >
           <svg
             className="icon-link"
@@ -747,7 +827,6 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
             />
             <path d="M8 12H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
           </svg>
-          <span className="button-text">{t('link')}</span>
         </button>
       </div>
 
@@ -851,6 +930,27 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
         </button>
       </div>
 
+      <div className="toolbar-group">
+        <button
+          type="button"
+          onClick={() => editor.dispatchCommand(INSERT_HORIZONTAL_RULE_COMMAND, undefined)}
+          aria-label={t('insertHorizontalRule')}
+          className="horizontal-rule-button"
+        >
+          <svg
+            className="icon-horizontal-rule"
+            aria-hidden="true"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path d="M3 12H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+        </button>
+      </div>
+
       <div className="toolbar-group toolbar-right">
         <button
           onClick={() => setShowDocs((prevState) => !prevState)}
@@ -898,7 +998,9 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
             aria-labelledby="link-dialog-title"
             tabIndex={-1}
           >
-            <h3 id="link-dialog-title">{t('insertLink')}</h3>
+            <h2 id="link-dialog-title" className="link-dialog-title">
+              {t('insertLink')}
+            </h2>
             <div className="link-dialog-form">
               <div className="form-group">
                 <label htmlFor="link-url">{t('url')}:</label>
@@ -952,7 +1054,11 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
                         editor.update(() => {
                           const selection = $getSelection();
                           if ($isRangeSelection(selection)) {
-                            if (linkText && selection.isCollapsed()) {
+                            if (
+                              linkText &&
+                              !linkFromSelectionRef.current &&
+                              selection.isCollapsed()
+                            ) {
                               // If there's link text but no selection, insert the text with the link
                               selection.insertText(linkText);
                               // Need to get selection again after text insertion

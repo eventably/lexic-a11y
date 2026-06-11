@@ -46,8 +46,27 @@ jest.mock('@lexical/react/LexicalHistoryPlugin', () => ({
   HistoryPlugin: () => <div data-testid="history-plugin" />,
 }));
 
+jest.mock('@lexical/react/LexicalHorizontalRuleNode', () => ({
+  HorizontalRuleNode: class HorizontalRuleNode {},
+  INSERT_HORIZONTAL_RULE_COMMAND: 'insert-horizontal-rule',
+}));
+
+jest.mock('@lexical/react/LexicalHorizontalRulePlugin', () => ({
+  HorizontalRulePlugin: () => <div data-testid="horizontal-rule-plugin" />,
+}));
+
+jest.mock('@lexical/react/LexicalMarkdownShortcutPlugin', () => ({
+  MarkdownShortcutPlugin: () => <div data-testid="markdown-shortcut-plugin" />,
+}));
+
+// Capture the OnChangePlugin onChange prop so tests can exercise the export path
+const mockOnChangeCapture = {};
+
 jest.mock('@lexical/react/LexicalOnChangePlugin', () => ({
-  OnChangePlugin: () => <div data-testid="on-change-plugin" />,
+  OnChangePlugin: ({ onChange }) => {
+    mockOnChangeCapture.onChange = onChange;
+    return <div data-testid="on-change-plugin" />;
+  },
 }));
 
 jest.mock('@lexical/react/LexicalErrorBoundary', () => ({
@@ -64,7 +83,21 @@ jest.mock('@lexical/react/LexicalListPlugin', () => ({
 }));
 
 jest.mock('@lexical/html', () => ({
-  $generateHtmlFromNodes: () => '<p>Test HTML Output</p>',
+  $generateHtmlFromNodes: jest.fn(() => '<p>Test HTML Output</p>'),
+}));
+
+jest.mock('../components/HeadingOutlinePlugin', () => ({
+  HeadingOutlinePlugin: () => <div data-testid="heading-outline-plugin" />,
+}));
+
+jest.mock('../components/WordCountPlugin', () => ({
+  WordCountPlugin: () => <div data-testid="word-count-plugin" />,
+}));
+
+// Stub the curated transformers so the real @lexical/markdown (which pulls in
+// the mocked lexical packages above) is never loaded in this suite
+jest.mock('../utils/markdown-transformers', () => ({
+  EDITOR_TRANSFORMERS: [],
 }));
 
 // Mock ToolbarPlugin to expose setShowDocs trigger
@@ -98,9 +131,27 @@ describe('Editor Component', () => {
     renderWithI18n(<Editor onContentChange={mockOnContentChange} />);
 
     expect(screen.getByTestId('history-plugin')).toBeInTheDocument();
+    expect(screen.getByTestId('horizontal-rule-plugin')).toBeInTheDocument();
     expect(screen.getByTestId('link-plugin')).toBeInTheDocument();
     expect(screen.getByTestId('list-plugin')).toBeInTheDocument();
+    expect(screen.getByTestId('markdown-shortcut-plugin')).toBeInTheDocument();
     expect(screen.getByTestId('on-change-plugin')).toBeInTheDocument();
+    expect(screen.getByTestId('heading-outline-plugin')).toBeInTheDocument();
+    expect(screen.getByTestId('word-count-plugin')).toBeInTheDocument();
+  });
+
+  it('exports a clean semantic <hr> through the HTML cleanup path', () => {
+    const { $generateHtmlFromNodes } = require('@lexical/html');
+    const mockOnContentChange = jest.fn();
+    renderWithI18n(<Editor onContentChange={mockOnContentChange} />);
+
+    // Simulate Lexical emitting an hr with theme classes/attributes
+    $generateHtmlFromNodes.mockReturnValueOnce(
+      '<p>Intro</p><hr class="my-4" data-x="1"><p>End</p>',
+    );
+    mockOnChangeCapture.onChange({ read: (cb) => cb() }, {});
+
+    expect(mockOnContentChange).toHaveBeenCalledWith('<p>Intro</p><hr><p>End</p>');
   });
 
   it('does not show docs overlay by default', () => {

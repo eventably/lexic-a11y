@@ -1,5 +1,8 @@
-import { act, render, screen } from '@testing-library/react';
+import { $createQuoteNode, $isQuoteNode } from '@lexical/rich-text';
+import { $setBlocksType } from '@lexical/selection';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { $createParagraphNode } from 'lexical';
 import { I18nextProvider } from 'react-i18next';
 
 import { ToolbarPlugin } from '../components/ToolbarPlugin';
@@ -78,10 +81,16 @@ jest.mock('@lexical/selection', () => ({
 jest.mock('@lexical/rich-text', () => ({
   $createHeadingNode: jest.fn(() => ({})),
   $isHeadingNode: jest.fn(() => false),
+  $createQuoteNode: jest.fn(() => ({})),
+  $isQuoteNode: jest.fn(() => false),
 }));
 
 jest.mock('@lexical/link', () => ({
   TOGGLE_LINK_COMMAND: 'toggle-link',
+}));
+
+jest.mock('@lexical/react/LexicalHorizontalRuleNode', () => ({
+  INSERT_HORIZONTAL_RULE_COMMAND: 'insert-horizontal-rule',
 }));
 
 // Helper for rendering with i18n provider
@@ -115,7 +124,7 @@ describe('ToolbarPlugin Component', () => {
     }
 
     // Link button
-    expect(screen.getByLabelText('Link')).toBeInTheDocument();
+    expect(screen.getByLabelText('Insert Link')).toBeInTheDocument();
   });
 
   it('dispatches bold command when bold button is clicked', async () => {
@@ -256,6 +265,80 @@ describe('ToolbarPlugin Component', () => {
     });
     expect(screen.getByLabelText('Undo')).toHaveAttribute('aria-disabled', 'true');
   });
+  it('renders the blockquote button with aria-pressed state', () => {
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    const quoteButton = screen.getByLabelText('Blockquote');
+    expect(quoteButton).toBeInTheDocument();
+    expect(quoteButton).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('toggles blockquote formatting when blockquote button is clicked', async () => {
+    const user = userEvent.setup();
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    const quoteButton = screen.getByLabelText('Blockquote');
+    await user.click(quoteButton);
+
+    expect(mockEditor.update).toHaveBeenCalled();
+  });
+
+  it('applies a quote block when the selection is not already a quote', async () => {
+    const user = userEvent.setup();
+    $setBlocksType.mockClear();
+    $createQuoteNode.mockClear();
+    $isQuoteNode.mockReturnValue(false);
+
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+    await user.click(screen.getByLabelText('Blockquote'));
+
+    expect($setBlocksType).toHaveBeenCalled();
+    // The block creator passed to $setBlocksType must produce a quote node
+    const creator = $setBlocksType.mock.calls[$setBlocksType.mock.calls.length - 1][1];
+    creator();
+    expect($createQuoteNode).toHaveBeenCalled();
+  });
+
+  it('converts back to a paragraph when the selection is already a quote', async () => {
+    const user = userEvent.setup();
+    $setBlocksType.mockClear();
+    $createParagraphNode.mockClear();
+    $isQuoteNode.mockReturnValue(true);
+
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+    await user.click(screen.getByLabelText('Blockquote'));
+
+    expect($setBlocksType).toHaveBeenCalled();
+    // The block creator passed to $setBlocksType must produce a paragraph node
+    const creator = $setBlocksType.mock.calls[$setBlocksType.mock.calls.length - 1][1];
+    creator();
+    expect($createParagraphNode).toHaveBeenCalled();
+
+    $isQuoteNode.mockReturnValue(false);
+  });
+
+  it('toggles blockquote with the Ctrl+Shift+Q keyboard shortcut', () => {
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    fireEvent.keyDown(document, { key: 'Q', ctrlKey: true, shiftKey: true });
+
+    expect(mockEditor.update).toHaveBeenCalled();
+  });
+
+  it('renders the horizontal rule button', () => {
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    expect(screen.getByLabelText('Insert Horizontal Rule')).toBeInTheDocument();
+  });
+
+  it('dispatches INSERT_HORIZONTAL_RULE_COMMAND when the horizontal rule button is clicked', async () => {
+    const user = userEvent.setup();
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    await user.click(screen.getByLabelText('Insert Horizontal Rule'));
+
+    expect(mockEditor.dispatchCommand).toHaveBeenCalledWith('insert-horizontal-rule', undefined);
+  });
 
   it('registers escape key command handler', () => {
     renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
@@ -280,7 +363,7 @@ describe('ToolbarPlugin Component', () => {
 
     renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
 
-    const linkButton = screen.getByLabelText('Link');
+    const linkButton = screen.getByLabelText('Insert Link');
     await user.click(linkButton);
 
     // Verify editor state was read to get selection

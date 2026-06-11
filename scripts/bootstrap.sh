@@ -30,7 +30,7 @@ install_if_missing() {
 
 install_if_missing semgrep
 install_if_missing osv-scanner
-install_if_missing gitleaks
+install_if_missing trufflehog
 install_if_missing lychee
 
 echo ""

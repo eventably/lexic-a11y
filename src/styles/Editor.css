@@ -67,12 +67,12 @@
 }
 
 .editor-placeholder {
+  /* No opacity: #757575 on white is 4.6:1 (AA); dimming it failed axe */
   color: var(--text-light);
   position: absolute;
   pointer-events: none;
   padding: 16px;
   font-style: italic;
-  opacity: 60%;
 }
 
 .editor-preview {
@@ -384,6 +384,7 @@ kbd {
   cursor: default;
 }
 
+.link-dialog h2,
 .link-dialog h3 {
   margin-top: 0;
   margin-bottom: 15px;
@@ -438,28 +439,6 @@ kbd {
   margin-top: 10px;
 }
 
-@media screen and (prefers-reduced-motion: reduce) {
-  .cancel-button,
-  .insert-button {
-    padding: 8px 16px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: none;
-  }
-}
-
-@media screen and (prefers-reduced-motion: reduce) {
-  .cancel-button,
-  .insert-button {
-    padding: 8px 16px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: none;
-  }
-}
-
 .cancel-button,
 .insert-button {
   padding: 8px 16px;
@@ -469,6 +448,7 @@ kbd {
   transition: var(--transition);
 }
 
+/* Must follow the base rule above so the cascade actually disables the transition. */
 .cancel-button {
   background-color: #f1f1f1;
   border: 1px solid var(--border-color);
@@ -531,4 +511,45 @@ kbd {
   font-size: 14px;
   border: 1px solid var(--border-color);
   line-height: 1.5;
+}
+
+.editor-outline {
+  margin-top: 12px;
+  padding: 12px 16px;
+  border: 1px solid var(--border-color);
+}
+
+.editor-outline-title {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+
+.editor-outline-warning {
+  font-weight: 600;
+}
+
+.editor-outline-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.editor-outline-link {
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+  font-size: 1rem;
+  padding: 2px 4px;
+}
+
+.editor-outline-tag {
+  font-weight: 700;
+}
+
+.editor-word-count {
+  padding: 6px 12px;
+  font-size: 0.875rem;
+  text-align: right;
+  border-top: 1px solid var(--border-color);
 }
