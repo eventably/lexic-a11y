@@ -1,5 +1,5 @@
 import { $isLinkNode } from '@lexical/link';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { I18nextProvider } from 'react-i18next';
 
@@ -304,5 +304,41 @@ describe('ToolbarPlugin Component', () => {
 
     expect(screen.getByRole('button', { name: 'Insert' })).toBeEnabled();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('edits an existing link in place without duplicating its text', async () => {
+    jest.useFakeTimers();
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+
+    // Cursor is inside a link: $isLinkNode true => edit mode, and findLinkNode
+    // returns the anchor node, which must behave like a LinkNode.
+    $isLinkNode.mockReturnValue(true);
+    mockAnchorNode.select = jest.fn();
+    mockAnchorNode.getChildrenSize = jest.fn(() => 1);
+    mockSelection.insertText.mockClear();
+    mockEditor.dispatchCommand.mockClear();
+
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    // Edit mode prefills the URL (https://example.com); submit it.
+    await user.click(screen.getByLabelText('Edit Link'));
+    await user.click(screen.getByRole('button', { name: 'Insert' }));
+
+    // The update runs on a 50ms timeout after the dialog closes.
+    act(() => {
+      jest.advanceTimersByTime(60);
+    });
+
+    // The existing link's contents are selected and its URL updated in place;
+    // the link text is NOT re-inserted (the bug this guards against).
+    expect(mockAnchorNode.select).toHaveBeenCalled();
+    expect(mockEditor.dispatchCommand).toHaveBeenCalledWith('toggle-link', {
+      url: 'https://example.com',
+      target: '_blank',
+    });
+    expect(mockSelection.insertText).not.toHaveBeenCalled();
+
+    $isLinkNode.mockReturnValue(false);
+    jest.useRealTimers();
   });
 });
