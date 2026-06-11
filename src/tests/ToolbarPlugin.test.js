@@ -1,5 +1,9 @@
-import { render, screen } from '@testing-library/react';
+import { $createCodeNode, $isCodeNode } from '@lexical/code';
+import { $createQuoteNode, $isQuoteNode } from '@lexical/rich-text';
+import { $setBlocksType } from '@lexical/selection';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { $createParagraphNode } from 'lexical';
 import { I18nextProvider } from 'react-i18next';
 
 import { ToolbarPlugin } from '../components/ToolbarPlugin';
@@ -27,10 +31,17 @@ const mockAnchorNode = {
   getParent: jest.fn(() => null),
 };
 
+// Mock text nodes returned by selection.getNodes() for clear-formatting tests
+const mockTextNodes = [
+  { setFormat: jest.fn(), setStyle: jest.fn() },
+  { setFormat: jest.fn(), setStyle: jest.fn() },
+];
+
 const mockSelection = {
   isRange: true,
   isCollapsed: jest.fn(() => false),
   getTextContent: jest.fn(() => 'selected text'),
+  getNodes: jest.fn(() => mockTextNodes),
   insertText: jest.fn(),
   insertNodes: jest.fn(),
   modify: jest.fn(),
@@ -48,20 +59,22 @@ jest.mock('lexical', () => {
   class TextNode {}
   return {
     $getSelection: jest.fn(() => mockSelection),
-    $isRangeSelection: jest.fn(() => true),
-    $createParagraphNode: jest.fn(() => ({})),
     $insertNodes: jest.fn(),
+    $isRangeSelection: jest.fn(() => true),
+    $isTextNode: jest.fn(() => true),
+    $createParagraphNode: jest.fn(() => ({})),
     KEY_ESCAPE_COMMAND: 'escape',
     COMMAND_PRIORITY_HIGH: 1,
+    COMMAND_PRIORITY_LOW: 0,
     FORMAT_TEXT_COMMAND: 'format-text',
+    UNDO_COMMAND: 'undo',
+    REDO_COMMAND: 'redo',
+    CAN_UNDO_COMMAND: 'can-undo',
+    CAN_REDO_COMMAND: 'can-redo',
     ElementNode,
     TextNode,
   };
 });
-
-jest.mock('../components/ImageNode', () => ({
-  $createImageNode: jest.fn((options) => ({ __image: true, ...options })),
-}));
 
 jest.mock('@lexical/list', () => ({
   INSERT_ORDERED_LIST_COMMAND: 'insert-ordered-list',
@@ -78,10 +91,25 @@ jest.mock('@lexical/selection', () => ({
 jest.mock('@lexical/rich-text', () => ({
   $createHeadingNode: jest.fn(() => ({})),
   $isHeadingNode: jest.fn(() => false),
+  $createQuoteNode: jest.fn(() => ({})),
+  $isQuoteNode: jest.fn(() => false),
 }));
 
 jest.mock('@lexical/link', () => ({
   TOGGLE_LINK_COMMAND: 'toggle-link',
+}));
+
+jest.mock('@lexical/code', () => ({
+  $createCodeNode: jest.fn(() => ({})),
+  $isCodeNode: jest.fn(() => false),
+}));
+
+jest.mock('../components/ImageNode', () => ({
+  $createImageNode: jest.fn((options) => ({ __image: true, ...options })),
+}));
+
+jest.mock('@lexical/react/LexicalHorizontalRuleNode', () => ({
+  INSERT_HORIZONTAL_RULE_COMMAND: 'insert-horizontal-rule',
 }));
 
 // Helper for rendering with i18n provider
@@ -115,7 +143,7 @@ describe('ToolbarPlugin Component', () => {
     }
 
     // Link button
-    expect(screen.getByLabelText('Link')).toBeInTheDocument();
+    expect(screen.getByLabelText('Insert Link')).toBeInTheDocument();
   });
 
   it('dispatches bold command when bold button is clicked', async () => {
@@ -166,6 +194,125 @@ describe('ToolbarPlugin Component', () => {
     await user.click(h1Button);
 
     expect(mockEditor.update).toHaveBeenCalled();
+  });
+
+  it('renders the clear formatting button', () => {
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    const clearButton = screen.getByLabelText('Clear Formatting');
+    expect(clearButton).toBeInTheDocument();
+    // Action button, not a toggle — must not expose aria-pressed
+    expect(clearButton).not.toHaveAttribute('aria-pressed');
+  });
+
+  it('clears inline formats and resets blocks when clear formatting is clicked', async () => {
+    const user = userEvent.setup();
+    const { $setBlocksType } = require('@lexical/selection');
+    const { $createParagraphNode } = require('lexical');
+    $setBlocksType.mockClear();
+    $createParagraphNode.mockClear();
+    mockTextNodes.forEach((node) => {
+      node.setFormat.mockClear();
+      node.setStyle.mockClear();
+    });
+
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+    await user.click(screen.getByLabelText('Clear Formatting'));
+
+    expect(mockEditor.update).toHaveBeenCalled();
+
+    // Inline marks and styles cleared on every selected text node
+    mockTextNodes.forEach((node) => {
+      expect(node.setFormat).toHaveBeenCalledWith(0);
+      expect(node.setStyle).toHaveBeenCalledWith('');
+    });
+
+    // Blocks reset to paragraphs
+    expect($setBlocksType).toHaveBeenCalled();
+    const creator = $setBlocksType.mock.calls[$setBlocksType.mock.calls.length - 1][1];
+    creator();
+    expect($createParagraphNode).toHaveBeenCalled();
+
+    // No list present here, so the list-removal command is not dispatched
+    expect(mockEditor.dispatchCommand).not.toHaveBeenCalledWith('remove-list', undefined);
+  });
+
+  it('removes list formatting when clearing a list selection', async () => {
+    const user = userEvent.setup();
+    const { $isListItemNode } = require('@lexical/list');
+    $isListItemNode.mockReturnValue(true);
+
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+    await user.click(screen.getByLabelText('Clear Formatting'));
+
+    // List blocks are unwrapped via REMOVE_LIST_COMMAND ($setBlocksType can't)
+    expect(mockEditor.dispatchCommand).toHaveBeenCalledWith('remove-list', undefined);
+
+    $isListItemNode.mockReturnValue(false);
+  });
+
+  it('renders inline code and code block buttons with aria-pressed state', () => {
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    const inlineCodeButton = screen.getByLabelText('Inline Code');
+    const codeBlockButton = screen.getByLabelText('Code Block');
+
+    expect(inlineCodeButton).toBeInTheDocument();
+    expect(codeBlockButton).toBeInTheDocument();
+    expect(inlineCodeButton).toHaveAttribute('aria-pressed', 'false');
+    expect(codeBlockButton).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('dispatches the code text format when inline code button is clicked', async () => {
+    const user = userEvent.setup();
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    await user.click(screen.getByLabelText('Inline Code'));
+
+    expect(mockEditor.dispatchCommand).toHaveBeenCalledWith('format-text', 'code');
+  });
+
+  it('applies a code block via $setBlocksType when not already in one', async () => {
+    const user = userEvent.setup();
+    $setBlocksType.mockClear();
+    $createCodeNode.mockClear();
+    $isCodeNode.mockReturnValue(false);
+
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+    await user.click(screen.getByLabelText('Code Block'));
+
+    expect($setBlocksType).toHaveBeenCalled();
+    // The block creator passed to $setBlocksType must produce a code node
+    const creator = $setBlocksType.mock.calls[$setBlocksType.mock.calls.length - 1][1];
+    creator();
+    expect($createCodeNode).toHaveBeenCalled();
+  });
+
+  it('converts back to a paragraph when the selection is already a code block', async () => {
+    const user = userEvent.setup();
+    $setBlocksType.mockClear();
+    $createParagraphNode.mockClear();
+    $isCodeNode.mockReturnValue(true);
+
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+    await user.click(screen.getByLabelText('Code Block'));
+
+    expect($setBlocksType).toHaveBeenCalled();
+    const creator = $setBlocksType.mock.calls[$setBlocksType.mock.calls.length - 1][1];
+    creator();
+    expect($createParagraphNode).toHaveBeenCalled();
+
+    $isCodeNode.mockReturnValue(false);
+  });
+
+  it('reflects inline code active state from the selection format', () => {
+    mockSelection.hasFormat.mockImplementation((format) => format === 'code');
+
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    expect(screen.getByLabelText('Inline Code')).toHaveAttribute('aria-pressed', 'true');
+
+    mockSelection.hasFormat.mockImplementation(() => false);
   });
 
   describe('image insertion with required alt text', () => {
@@ -291,6 +438,272 @@ describe('ToolbarPlugin Component', () => {
     });
   });
 
+  describe('roving tabindex (WAI-ARIA toolbar pattern)', () => {
+    const getToolbarButtons = () => {
+      const toolbar = screen.getByRole('toolbar');
+      return Array.from(toolbar.querySelectorAll('.toolbar-group > button'));
+    };
+
+    it('exposes exactly one tab stop', () => {
+      renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+      const buttons = getToolbarButtons();
+      const tabStops = buttons.filter((button) => button.tabIndex === 0);
+      const skipped = buttons.filter((button) => button.tabIndex === -1);
+
+      expect(buttons.length).toBeGreaterThan(1);
+      expect(tabStops).toHaveLength(1);
+      expect(skipped).toHaveLength(buttons.length - 1);
+    });
+
+    it('declares a horizontal orientation', () => {
+      renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+      expect(screen.getByRole('toolbar')).toHaveAttribute('aria-orientation', 'horizontal');
+    });
+
+    it('skips a disabled button when moving focus', () => {
+      renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+      const buttons = getToolbarButtons();
+      const toolbar = screen.getByRole('toolbar');
+
+      // Disable the second control; roving should step over it.
+      buttons[1].disabled = true;
+      buttons[0].focus();
+      fireEvent.keyDown(toolbar, { key: 'ArrowRight' });
+
+      expect(buttons[2]).toHaveFocus();
+      expect(buttons[1]).not.toHaveFocus();
+    });
+
+    it('moves focus with ArrowRight and updates the tab stop', () => {
+      renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+      const buttons = getToolbarButtons();
+      const toolbar = screen.getByRole('toolbar');
+
+      buttons[0].focus();
+      fireEvent.keyDown(toolbar, { key: 'ArrowRight' });
+
+      expect(buttons[1]).toHaveFocus();
+      expect(buttons[1].tabIndex).toBe(0);
+      expect(buttons[0].tabIndex).toBe(-1);
+    });
+
+    it('moves focus with ArrowLeft and wraps from the first to the last control', () => {
+      renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+      const buttons = getToolbarButtons();
+      const toolbar = screen.getByRole('toolbar');
+
+      buttons[0].focus();
+      fireEvent.keyDown(toolbar, { key: 'ArrowLeft' });
+
+      expect(buttons[buttons.length - 1]).toHaveFocus();
+    });
+
+    it('wraps from the last control to the first with ArrowRight', () => {
+      renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+      const buttons = getToolbarButtons();
+      const toolbar = screen.getByRole('toolbar');
+
+      buttons[buttons.length - 1].focus();
+      fireEvent.keyDown(toolbar, { key: 'ArrowRight' });
+
+      expect(buttons[0]).toHaveFocus();
+    });
+
+    it('jumps to first/last with Home and End', () => {
+      renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+      const buttons = getToolbarButtons();
+      const toolbar = screen.getByRole('toolbar');
+
+      buttons[2].focus();
+      fireEvent.keyDown(toolbar, { key: 'End' });
+      expect(buttons[buttons.length - 1]).toHaveFocus();
+
+      fireEvent.keyDown(toolbar, { key: 'Home' });
+      expect(buttons[0]).toHaveFocus();
+    });
+
+    it('updates the roving tab stop when a button gains focus directly', () => {
+      renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+      const buttons = getToolbarButtons();
+
+      fireEvent.focus(buttons[3]);
+
+      expect(buttons[3].tabIndex).toBe(0);
+      expect(buttons[0].tabIndex).toBe(-1);
+    });
+
+    it('preserves aria-pressed semantics on toolbar toggles', () => {
+      renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+      expect(screen.getByLabelText('Bold')).toHaveAttribute('aria-pressed', 'false');
+      expect(screen.getByLabelText('Bold')).toHaveAttribute('aria-label', 'Bold');
+    });
+  });
+
+  // Helper to find a command handler registered with the mock editor
+  const getRegisteredHandler = (command) => {
+    const call = mockEditor.registerCommand.mock.calls.find(([cmd]) => cmd === command);
+    return call ? call[1] : null;
+  };
+
+  it('renders undo and redo buttons disabled by default', () => {
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    const undoButton = screen.getByLabelText('Undo');
+    const redoButton = screen.getByLabelText('Redo');
+
+    expect(undoButton).toBeInTheDocument();
+    expect(redoButton).toBeInTheDocument();
+    // aria-disabled (not native disabled) so the controls stay in the tab order
+    // and are announced as disabled rather than disappearing for AT users.
+    expect(undoButton).toBeEnabled();
+    expect(redoButton).toBeEnabled();
+    expect(undoButton).toHaveAttribute('aria-disabled', 'true');
+    expect(redoButton).toHaveAttribute('aria-disabled', 'true');
+  });
+
+  it('does not dispatch undo while unavailable but stays focusable', async () => {
+    const user = userEvent.setup();
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    const undoButton = screen.getByLabelText('Undo');
+    undoButton.focus();
+    expect(undoButton).toHaveFocus();
+
+    await user.click(undoButton);
+    expect(mockEditor.dispatchCommand).not.toHaveBeenCalledWith('undo', undefined);
+  });
+
+  it('registers listeners for undo/redo availability', () => {
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    expect(getRegisteredHandler('can-undo')).toEqual(expect.any(Function));
+    expect(getRegisteredHandler('can-redo')).toEqual(expect.any(Function));
+  });
+
+  it('enables the undo button when undo becomes available and dispatches UNDO_COMMAND', async () => {
+    const user = userEvent.setup();
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    // Simulate the editor reporting undo availability
+    act(() => {
+      getRegisteredHandler('can-undo')(true);
+    });
+
+    const undoButton = screen.getByLabelText('Undo');
+    expect(undoButton).toBeEnabled();
+    expect(undoButton).toHaveAttribute('aria-disabled', 'false');
+
+    await user.click(undoButton);
+    expect(mockEditor.dispatchCommand).toHaveBeenCalledWith('undo', undefined);
+  });
+
+  it('enables the redo button when redo becomes available and dispatches REDO_COMMAND', async () => {
+    const user = userEvent.setup();
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    // Simulate the editor reporting redo availability
+    act(() => {
+      getRegisteredHandler('can-redo')(true);
+    });
+
+    const redoButton = screen.getByLabelText('Redo');
+    expect(redoButton).toBeEnabled();
+    expect(redoButton).toHaveAttribute('aria-disabled', 'false');
+
+    await user.click(redoButton);
+    expect(mockEditor.dispatchCommand).toHaveBeenCalledWith('redo', undefined);
+  });
+
+  it('disables the undo button again when undo becomes unavailable', () => {
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    act(() => {
+      getRegisteredHandler('can-undo')(true);
+    });
+    expect(screen.getByLabelText('Undo')).toBeEnabled();
+
+    act(() => {
+      getRegisteredHandler('can-undo')(false);
+    });
+    expect(screen.getByLabelText('Undo')).toHaveAttribute('aria-disabled', 'true');
+  });
+  it('renders the blockquote button with aria-pressed state', () => {
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    const quoteButton = screen.getByLabelText('Blockquote');
+    expect(quoteButton).toBeInTheDocument();
+    expect(quoteButton).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('toggles blockquote formatting when blockquote button is clicked', async () => {
+    const user = userEvent.setup();
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    const quoteButton = screen.getByLabelText('Blockquote');
+    await user.click(quoteButton);
+
+    expect(mockEditor.update).toHaveBeenCalled();
+  });
+
+  it('applies a quote block when the selection is not already a quote', async () => {
+    const user = userEvent.setup();
+    $setBlocksType.mockClear();
+    $createQuoteNode.mockClear();
+    $isQuoteNode.mockReturnValue(false);
+
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+    await user.click(screen.getByLabelText('Blockquote'));
+
+    expect($setBlocksType).toHaveBeenCalled();
+    // The block creator passed to $setBlocksType must produce a quote node
+    const creator = $setBlocksType.mock.calls[$setBlocksType.mock.calls.length - 1][1];
+    creator();
+    expect($createQuoteNode).toHaveBeenCalled();
+  });
+
+  it('converts back to a paragraph when the selection is already a quote', async () => {
+    const user = userEvent.setup();
+    $setBlocksType.mockClear();
+    $createParagraphNode.mockClear();
+    $isQuoteNode.mockReturnValue(true);
+
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+    await user.click(screen.getByLabelText('Blockquote'));
+
+    expect($setBlocksType).toHaveBeenCalled();
+    // The block creator passed to $setBlocksType must produce a paragraph node
+    const creator = $setBlocksType.mock.calls[$setBlocksType.mock.calls.length - 1][1];
+    creator();
+    expect($createParagraphNode).toHaveBeenCalled();
+
+    $isQuoteNode.mockReturnValue(false);
+  });
+
+  it('toggles blockquote with the Ctrl+Shift+Q keyboard shortcut', () => {
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    fireEvent.keyDown(document, { key: 'Q', ctrlKey: true, shiftKey: true });
+
+    expect(mockEditor.update).toHaveBeenCalled();
+  });
+
+  it('renders the horizontal rule button', () => {
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    expect(screen.getByLabelText('Insert Horizontal Rule')).toBeInTheDocument();
+  });
+
+  it('dispatches INSERT_HORIZONTAL_RULE_COMMAND when the horizontal rule button is clicked', async () => {
+    const user = userEvent.setup();
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    await user.click(screen.getByLabelText('Insert Horizontal Rule'));
+
+    expect(mockEditor.dispatchCommand).toHaveBeenCalledWith('insert-horizontal-rule', undefined);
+  });
+
   it('registers escape key command handler', () => {
     renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
 
@@ -314,7 +727,7 @@ describe('ToolbarPlugin Component', () => {
 
     renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
 
-    const linkButton = screen.getByLabelText('Link');
+    const linkButton = screen.getByLabelText('Insert Link');
     await user.click(linkButton);
 
     // Verify editor state was read to get selection
