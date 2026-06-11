@@ -67,12 +67,12 @@
 }
 
 .editor-placeholder {
+  /* No opacity: #757575 on white is 4.6:1 (AA); dimming it failed axe */
   color: var(--text-light);
   position: absolute;
   pointer-events: none;
   padding: 16px;
   font-style: italic;
-  opacity: 60%;
 }
 
 .editor-preview {
