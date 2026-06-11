@@ -26,16 +26,19 @@ verifies the control semantics, not just the visual result.
 
 ## Assumed accessible names
 
-The use cases address controls by the accessible names on the current feature
-branches (PRs #50 and #51), which fix labels that previously rendered as raw
-i18n keys:
+These use cases address controls by accessible names that are introduced by two
+other open PRs, which fix labels that previously rendered as raw i18n keys.
+**Merge those PRs before this one** so the names resolve:
 
-- The editor surface: `Editor content` (added in PR #50)
-- `Bullet List`, `Numbered List`, `Show Help` (translations added in PR #50)
-- `Insert Link` (renamed from the uninformative `Link` in PR #51)
+- The editor surface: `Editor content` — `editorContent` aria-label added in PR
+  #50 (`feature/18-e2e-tests`).
+- `Bullet List`, `Numbered List`, `Show Help` — `bulletList` / `numberedList` /
+  `showHelp` translations added in PR #50 (`feature/18-e2e-tests`).
+- `Insert Link` — the link button's aria-label, renamed from the uninformative
+  `Link` to `insertLink` in PR #51 (`feature/8-a11y-assert`).
 
-If a use case fails to locate one of these controls, check that those PRs have
-merged — a failure here means the accessible name regressed.
+Once those PRs land on `develop`, a use case that still fails to locate one of
+these controls means the accessible name has regressed.
 
 ## Running them
 
