@@ -58,6 +58,13 @@ jest.mock('@lexical/link', () => ({
   LinkNode: class LinkNode {},
 }));
 
+jest.mock('@lexical/code', () => ({
+  CodeNode: class CodeNode {},
+  CodeHighlightNode: class CodeHighlightNode {},
+  $createCodeNode: jest.fn(() => ({})),
+  $isCodeNode: jest.fn(() => false),
+}));
+
 jest.mock('@lexical/react/LexicalComposer', () => ({
   LexicalComposer: ({ children }) => <div>{children}</div>,
 }));

@@ -11,6 +11,11 @@ jest.mock('@lexical/rich-text', () => ({
   QuoteNode: class QuoteNode {},
 }));
 
+jest.mock('@lexical/code', () => ({
+  CodeNode: class CodeNode {},
+  CodeHighlightNode: class CodeHighlightNode {},
+}));
+
 jest.mock('@lexical/list', () => ({
   ListNode: class ListNode {},
   ListItemNode: class ListItemNode {},
@@ -183,5 +188,21 @@ describe('Editor Component', () => {
 
     expect(screen.getByText('Usage Tips')).toBeInTheDocument();
     expect(screen.getByText(/Use the toolbar buttons or keyboard shortcuts/)).toBeInTheDocument();
+  });
+
+  it('exports semantic <pre>/<code> without utility classes', () => {
+    const { $generateHtmlFromNodes } = require('@lexical/html');
+    const mockOnContentChange = jest.fn();
+    renderWithI18n(<Editor onContentChange={mockOnContentChange} />);
+
+    $generateHtmlFromNodes.mockReturnValueOnce(
+      '<pre class="editor-code-block"><code class="editor-text-code">const x = 1;</code></pre>' +
+        '<p>uses <code class="editor-text-code">inline</code> code</p>',
+    );
+    mockOnChangeCapture.onChange({ read: (cb) => cb() }, {});
+
+    expect(mockOnContentChange).toHaveBeenCalledWith(
+      '<pre><code>const x = 1;</code></pre><p>uses <code>inline</code> code</p>',
+    );
   });
 });

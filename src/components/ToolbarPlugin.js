@@ -1,4 +1,5 @@
 // ToolbarPlugin.js
+import { $createCodeNode, $isCodeNode } from '@lexical/code';
 import { TOGGLE_LINK_COMMAND } from '@lexical/link';
 import {
   $isListItemNode,
@@ -46,6 +47,8 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
   const [isItalic, setIsItalic] = useState(false);
   const [isUnderline, setIsUnderline] = useState(false);
   const [isStrikethrough, setIsStrikethrough] = useState(false);
+  const [isInlineCode, setIsInlineCode] = useState(false);
+  const [isCodeBlockActive, setIsCodeBlockActive] = useState(false);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
   const [isQuoteActive, setIsQuoteActive] = useState(false);
@@ -167,6 +170,34 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
     },
     [editor],
   );
+
+  // Helper to toggle a code block (code <-> paragraph)
+  const toggleCodeBlock = useCallback(() => {
+    editor.update(() => {
+      const selection = $getSelection();
+      if (!$isRangeSelection(selection)) return;
+
+      // Determine whether the selection is already inside a code block
+      const anchorNode = selection.anchor.getNode();
+      const focusNode = selection.focus.getNode();
+      const isAlreadyCode =
+        $isCodeNode(anchorNode) ||
+        $isCodeNode(anchorNode.getParent()) ||
+        $isCodeNode(focusNode) ||
+        $isCodeNode(focusNode.getParent());
+
+      try {
+        if (isAlreadyCode) {
+          // Toggle back to a paragraph when already a code block
+          $setBlocksType(selection, () => $createParagraphNode());
+        } else {
+          $setBlocksType(selection, () => $createCodeNode());
+        }
+      } catch (error) {
+        console.error('Error applying code block:', error);
+      }
+    });
+  }, [editor]);
 
   // Strip all inline marks from the selection and reset blocks to paragraphs
   const clearFormatting = useCallback(() => {
@@ -416,6 +447,8 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
               setIsItalic(false);
               setIsUnderline(false);
               setIsStrikethrough(false);
+              setIsInlineCode(false);
+              setIsCodeBlockActive(false);
               setIsQuoteActive(false);
               return;
             }
@@ -432,6 +465,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
               let italicActive = false;
               let underlineActive = false;
               let strikethroughActive = false;
+              let inlineCodeActive = false;
 
               if (hasTextAndSelection) {
                 // In Lexical, format types are represented by numerical values
@@ -440,6 +474,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
                 italicActive = selection.hasFormat('italic');
                 underlineActive = selection.hasFormat('underline');
                 strikethroughActive = selection.hasFormat('strikethrough');
+                inlineCodeActive = selection.hasFormat('code');
               }
 
               // Update state for each format type
@@ -447,18 +482,21 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
               setIsItalic(italicActive);
               setIsUnderline(underlineActive);
               setIsStrikethrough(strikethroughActive);
+              setIsInlineCode(inlineCodeActive);
             } catch (_error) {
               // Reset formatting state on error
               setIsBold(false);
               setIsItalic(false);
               setIsUnderline(false);
               setIsStrikethrough(false);
+              setIsInlineCode(false);
             }
 
             // Check for headings, lists, etc.
             let headingTag = null;
             let orderedListActive = false;
             let unorderedListActive = false;
+            let codeBlockActive = false;
             let quoteActive = false;
 
             try {
@@ -491,9 +529,16 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
               // Find headings
               headingTag = findHeadingTag(anchorNode);
 
+              // Detect whether the selection is inside a code block. Check both
+              // anchor and focus so the active state matches toggleCodeBlock's logic.
+              const focusNode = selection.focus.getNode();
+              codeBlockActive =
+                $isCodeNode(anchorNode) ||
+                $isCodeNode(anchorNode.getParent()) ||
+                $isCodeNode(focusNode) ||
+                $isCodeNode(focusNode.getParent());
               // Detect whether the selection is inside a quote block. Check both
               // anchor and focus so the active state matches toggleQuote's logic.
-              const focusNode = selection.focus.getNode();
               quoteActive =
                 $isQuoteNode(anchorNode) ||
                 $isQuoteNode(anchorNode.getParent()) ||
@@ -547,6 +592,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
             setActiveHeadingTag(headingTag);
             setIsOrderedListActive(orderedListActive);
             setIsUnorderedListActive(unorderedListActive);
+            setIsCodeBlockActive(codeBlockActive);
             setIsQuoteActive(quoteActive);
           } catch (_e) {
             // Reset all states if there's an error
@@ -557,6 +603,8 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
             setIsItalic(false);
             setIsUnderline(false);
             setIsStrikethrough(false);
+            setIsInlineCode(false);
+            setIsCodeBlockActive(false);
             setIsQuoteActive(false);
           }
         });
@@ -815,6 +863,69 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
             />
             <path
               d="M12 13C15.5 14 16 15 16 17C16 19.5 13.5 20.5 12 20.5C10 20.5 8 19 8 19"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
+        <button
+          onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'code')}
+          aria-label={t('inlineCode')}
+          className={isInlineCode ? 'active' : ''}
+          aria-pressed={isInlineCode}
+        >
+          <svg
+            className="icon-inline-code"
+            aria-hidden="true"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M8 6L2 12L8 18"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M16 6L22 12L16 18"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
+        <button
+          onClick={toggleCodeBlock}
+          aria-label={t('codeBlock')}
+          className={`code-block-button ${isCodeBlockActive ? 'active' : ''}`}
+          aria-pressed={isCodeBlockActive}
+        >
+          <svg
+            className="icon-code-block"
+            aria-hidden="true"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <rect x="3" y="4" width="18" height="16" rx="2" stroke="currentColor" strokeWidth="2" />
+            <path
+              d="M9 10L7 12L9 14"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M15 10L17 12L15 14"
               stroke="currentColor"
               strokeWidth="2"
               strokeLinecap="round"

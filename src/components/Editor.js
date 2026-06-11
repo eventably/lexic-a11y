@@ -1,4 +1,5 @@
 // Editor.js
+import { CodeHighlightNode, CodeNode } from '@lexical/code';
 import { $generateHtmlFromNodes } from '@lexical/html';
 import { LinkNode } from '@lexical/link';
 import { ListItemNode, ListNode } from '@lexical/list';
@@ -32,7 +33,9 @@ const theme = {
     underline: 'underline',
     strikethrough: 'line-through',
     underlineStrikethrough: 'underline line-through',
+    code: 'editor-text-code',
   },
+  code: 'editor-code-block',
   heading: {
     h1: 'text-3xl font-bold mt-6 mb-4',
     h2: 'text-2xl font-bold mt-5 mb-3',
@@ -65,6 +68,8 @@ const editorConfig = {
     ListItemNode,
     QuoteNode,
     LinkNode,
+    CodeNode,
+    CodeHighlightNode,
     HorizontalRuleNode,
     // ImageNode,
   ],
@@ -102,7 +107,9 @@ export default function Editor({ onContentChange }) {
                 // Use a simple regex to clean up the utility classes
                 const cleanHtml = htmlString
                   .replace(/class="[^"]*"/g, '') // Remove all class attributes
-                  .replace(/<(h[1-6]|p|ul|ol|li|hr)([^>]*)>/g, '<$1>') // Clean heading, paragraph, list, and hr tags
+                  // List longer tags before their prefixes (pre before p) so the
+                  // alternation doesn't rewrite <pre> as <p>.
+                  .replace(/<(h[1-6]|pre|p|ul|ol|li|code|hr)([^>]*)>/g, '<$1>') // Clean heading, paragraph, list, code, and hr tags
                   .replace(/<a([^>]*)(class="[^"]*")([^>]*)>/g, '<a$1$3>'); // Clean link tags
 
                 setHtmlOutput(cleanHtml);
