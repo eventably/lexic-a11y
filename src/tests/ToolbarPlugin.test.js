@@ -207,6 +207,23 @@ describe('ToolbarPlugin Component', () => {
     const creator = $setBlocksType.mock.calls[$setBlocksType.mock.calls.length - 1][1];
     creator();
     expect($createParagraphNode).toHaveBeenCalled();
+
+    // No list present here, so the list-removal command is not dispatched
+    expect(mockEditor.dispatchCommand).not.toHaveBeenCalledWith('remove-list', undefined);
+  });
+
+  it('removes list formatting when clearing a list selection', async () => {
+    const user = userEvent.setup();
+    const { $isListItemNode } = require('@lexical/list');
+    $isListItemNode.mockReturnValue(true);
+
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+    await user.click(screen.getByLabelText('Clear Formatting'));
+
+    // List blocks are unwrapped via REMOVE_LIST_COMMAND ($setBlocksType can't)
+    expect(mockEditor.dispatchCommand).toHaveBeenCalledWith('remove-list', undefined);
+
+    $isListItemNode.mockReturnValue(false);
   });
 
   it('registers escape key command handler', () => {

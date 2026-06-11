@@ -88,6 +88,27 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
 
   // Strip all inline marks from the selection and reset blocks to paragraphs
   const clearFormatting = useCallback(() => {
+    // $setBlocksType cannot unwrap list items, so detect a list selection and
+    // remove it via the list command before resetting the remaining blocks.
+    let inList = false;
+    editor.getEditorState().read(() => {
+      const selection = $getSelection();
+      if ($isRangeSelection(selection)) {
+        inList = selection.getNodes().some((node) => {
+          const parent = node.getParent ? node.getParent() : null;
+          return (
+            $isListNode(node) ||
+            $isListItemNode(node) ||
+            $isListNode(parent) ||
+            $isListItemNode(parent)
+          );
+        });
+      }
+    });
+    if (inList) {
+      editor.dispatchCommand(REMOVE_LIST_COMMAND, undefined);
+    }
+
     editor.update(() => {
       const selection = $getSelection();
       if (!$isRangeSelection(selection)) return;
