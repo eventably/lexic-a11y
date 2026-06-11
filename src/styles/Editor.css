@@ -368,6 +368,7 @@ kbd {
   cursor: default;
 }
 
+.link-dialog h2,
 .link-dialog h3 {
   margin-top: 0;
   margin-bottom: 15px;
@@ -431,6 +432,7 @@ kbd {
   transition: var(--transition);
 }
 
+/* Must follow the base rule above so the cascade actually disables the transition. */
 .cancel-button {
   background-color: #f1f1f1;
   border: 1px solid var(--border-color);

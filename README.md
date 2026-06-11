@@ -273,6 +273,13 @@ We welcome contributions from the community! If you'd like to contribute:
 | `npm run check`         | Lint + stylelint + markdown + format:check    |
 | `npm run check:all`     | Full local gate (used by the `pre-push` hook) |
 
+> **Accessibility test tooling:** `npm test` runs automated WCAG assertions via
+> [`@afixt/a11y-assert`](https://www.npmjs.com/package/@afixt/a11y-assert), a
+> first-party Afixt dev dependency. It declares `engines.node >= 22`, so run the
+> test suite on Node 22+ (the version CI uses); Node 20 only emits an
+> `EBADENGINE` warning. It is a `devDependency` and is not part of the published
+> package or its production `license:check`.
+
 ### Architecture decisions
 
 See [`docs/adr/`](./docs/adr/) for architectural decision records. Use
