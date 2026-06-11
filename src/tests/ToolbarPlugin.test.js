@@ -198,6 +198,26 @@ describe('ToolbarPlugin Component', () => {
       expect(insertButton).toBeEnabled();
     });
 
+    it('keeps Insert disabled for a whitespace-only URL or alt text', async () => {
+      const user = userEvent.setup();
+      renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+      await openImageDialog(user);
+      const insertButton = screen.getByRole('button', { name: 'Insert' });
+
+      // Whitespace-only URL must not enable Insert
+      await user.type(screen.getByLabelText(/URL/), '   ');
+      await user.type(screen.getByLabelText(/Alt Text/), 'A cat');
+      expect(insertButton).toBeDisabled();
+
+      // Real URL but whitespace-only alt (not decorative) also stays disabled
+      await user.clear(screen.getByLabelText(/URL/));
+      await user.type(screen.getByLabelText(/URL/), 'https://example.com/cat.png');
+      await user.clear(screen.getByLabelText(/Alt Text/));
+      await user.type(screen.getByLabelText(/Alt Text/), '   ');
+      expect(insertButton).toBeDisabled();
+    });
+
     it('allows insertion without alt text only when explicitly marked decorative', async () => {
       const user = userEvent.setup();
       renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);

@@ -46,7 +46,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
   const imageUrlInputRef = useRef(null);
 
   // Alt text is required unless the image is explicitly marked decorative
-  const canInsertImage = Boolean(imageUrl && (imageAlt.trim() !== '' || imageDecorative));
+  const canInsertImage = Boolean(imageUrl.trim() && (imageAlt.trim() !== '' || imageDecorative));
 
   const closeImageDialog = useCallback(() => {
     setShowImageDialog(false);
@@ -62,7 +62,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
     editor.update(() => {
       try {
         const imageNode = $createImageNode({
-          src: imageUrl,
+          src: imageUrl.trim(),
           alt: imageDecorative ? '' : imageAlt.trim(),
           decorative: imageDecorative,
         });
