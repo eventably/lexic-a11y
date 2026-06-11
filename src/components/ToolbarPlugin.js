@@ -477,6 +477,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
       className="editor-toolbar"
       role="toolbar"
       aria-label={t('editorToolbar')}
+      aria-orientation="horizontal"
       onKeyDown={handleToolbarKeyDown}
       onFocus={handleToolbarFocus}
     >

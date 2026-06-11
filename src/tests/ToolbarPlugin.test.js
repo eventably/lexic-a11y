@@ -181,6 +181,25 @@ describe('ToolbarPlugin Component', () => {
       expect(skipped).toHaveLength(buttons.length - 1);
     });
 
+    it('declares a horizontal orientation', () => {
+      renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+      expect(screen.getByRole('toolbar')).toHaveAttribute('aria-orientation', 'horizontal');
+    });
+
+    it('skips a disabled button when moving focus', () => {
+      renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+      const buttons = getToolbarButtons();
+      const toolbar = screen.getByRole('toolbar');
+
+      // Disable the second control; roving should step over it.
+      buttons[1].disabled = true;
+      buttons[0].focus();
+      fireEvent.keyDown(toolbar, { key: 'ArrowRight' });
+
+      expect(buttons[2]).toHaveFocus();
+      expect(buttons[1]).not.toHaveFocus();
+    });
+
     it('moves focus with ArrowRight and updates the tab stop', () => {
       renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
       const buttons = getToolbarButtons();
