@@ -116,6 +116,24 @@ describe('HeadingOutlinePlugin', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Multiple H1 headings found (2)');
   });
 
+  it('renders every warning even when two are identical (no key collision)', () => {
+    // Two separate H2->H4 jumps produce identical messages (and no H1, so no
+    // multiple-H1 warning); both warning items must render.
+    mockHeadings = [
+      makeHeading('1', 'h2', 'A'),
+      makeHeading('2', 'h4', 'B'),
+      makeHeading('3', 'h2', 'C'),
+      makeHeading('4', 'h4', 'D'),
+    ];
+
+    renderWithI18n(<HeadingOutlinePlugin />);
+
+    const items = screen
+      .getAllByRole('listitem')
+      .filter((li) => li.className.includes('editor-outline-warning'));
+    expect(items).toHaveLength(2);
+  });
+
   it('shows no warnings for a well-formed structure', () => {
     mockHeadings = [makeHeading('1', 'h1', 'One'), makeHeading('2', 'h2', 'Two')];
 

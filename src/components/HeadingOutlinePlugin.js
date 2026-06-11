@@ -63,8 +63,8 @@ export function HeadingOutlinePlugin() {
   };
 
   const warnings = validateHeadingStructure(headings)
-    .map((warning) => warningMessage(t, warning))
-    .filter(Boolean);
+    .map((warning) => ({ warning, message: warningMessage(t, warning) }))
+    .filter((entry) => entry.message);
 
   return (
     <section className="editor-outline" aria-label={t('documentOutline')}>
@@ -75,8 +75,11 @@ export function HeadingOutlinePlugin() {
       <div role="status" aria-live="polite" className="editor-outline-warnings">
         {warnings.length > 0 ? (
           <ul>
-            {warnings.map((message) => (
-              <li key={message} className="editor-outline-warning">
+            {warnings.map(({ warning, message }) => (
+              <li
+                key={`${warning.type}-${warning.index ?? 'h1'}`}
+                className="editor-outline-warning"
+              >
                 <span aria-hidden="true">⚠ </span>
                 {t('headingWarningPrefix')}: {message}
               </li>
