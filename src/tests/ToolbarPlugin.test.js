@@ -182,10 +182,24 @@ describe('ToolbarPlugin Component', () => {
 
     expect(undoButton).toBeInTheDocument();
     expect(redoButton).toBeInTheDocument();
-    expect(undoButton).toBeDisabled();
-    expect(redoButton).toBeDisabled();
+    // aria-disabled (not native disabled) so the controls stay in the tab order
+    // and are announced as disabled rather than disappearing for AT users.
+    expect(undoButton).toBeEnabled();
+    expect(redoButton).toBeEnabled();
     expect(undoButton).toHaveAttribute('aria-disabled', 'true');
     expect(redoButton).toHaveAttribute('aria-disabled', 'true');
+  });
+
+  it('does not dispatch undo while unavailable but stays focusable', async () => {
+    const user = userEvent.setup();
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    const undoButton = screen.getByLabelText('Undo');
+    undoButton.focus();
+    expect(undoButton).toHaveFocus();
+
+    await user.click(undoButton);
+    expect(mockEditor.dispatchCommand).not.toHaveBeenCalledWith('undo', undefined);
   });
 
   it('registers listeners for undo/redo availability', () => {
@@ -240,7 +254,7 @@ describe('ToolbarPlugin Component', () => {
     act(() => {
       getRegisteredHandler('can-undo')(false);
     });
-    expect(screen.getByLabelText('Undo')).toBeDisabled();
+    expect(screen.getByLabelText('Undo')).toHaveAttribute('aria-disabled', 'true');
   });
 
   it('registers escape key command handler', () => {

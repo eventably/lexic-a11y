@@ -444,10 +444,13 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
     <div className="editor-toolbar" role="toolbar" aria-label={t('editorToolbar')}>
       <div className="toolbar-group">
         <button
-          onClick={() => editor.dispatchCommand(UNDO_COMMAND, undefined)}
+          type="button"
+          onClick={() => {
+            // aria-disabled keeps the button focusable/announced; no-op when unavailable.
+            if (canUndo) editor.dispatchCommand(UNDO_COMMAND, undefined);
+          }}
           aria-label={t('undo')}
           className="undo-button"
-          disabled={!canUndo}
           aria-disabled={!canUndo}
         >
           <svg
@@ -476,10 +479,12 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
           </svg>
         </button>
         <button
-          onClick={() => editor.dispatchCommand(REDO_COMMAND, undefined)}
+          type="button"
+          onClick={() => {
+            if (canRedo) editor.dispatchCommand(REDO_COMMAND, undefined);
+          }}
           aria-label={t('redo')}
           className="redo-button"
-          disabled={!canRedo}
           aria-disabled={!canRedo}
         >
           <svg
