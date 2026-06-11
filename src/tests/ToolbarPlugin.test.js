@@ -177,6 +177,109 @@ describe('ToolbarPlugin Component', () => {
     expect(mockEditor.update).toHaveBeenCalled();
   });
 
+  describe('roving tabindex (WAI-ARIA toolbar pattern)', () => {
+    const getToolbarButtons = () => {
+      const toolbar = screen.getByRole('toolbar');
+      return Array.from(toolbar.querySelectorAll('.toolbar-group > button'));
+    };
+
+    it('exposes exactly one tab stop', () => {
+      renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+      const buttons = getToolbarButtons();
+      const tabStops = buttons.filter((button) => button.tabIndex === 0);
+      const skipped = buttons.filter((button) => button.tabIndex === -1);
+
+      expect(buttons.length).toBeGreaterThan(1);
+      expect(tabStops).toHaveLength(1);
+      expect(skipped).toHaveLength(buttons.length - 1);
+    });
+
+    it('declares a horizontal orientation', () => {
+      renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+      expect(screen.getByRole('toolbar')).toHaveAttribute('aria-orientation', 'horizontal');
+    });
+
+    it('skips a disabled button when moving focus', () => {
+      renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+      const buttons = getToolbarButtons();
+      const toolbar = screen.getByRole('toolbar');
+
+      // Disable the second control; roving should step over it.
+      buttons[1].disabled = true;
+      buttons[0].focus();
+      fireEvent.keyDown(toolbar, { key: 'ArrowRight' });
+
+      expect(buttons[2]).toHaveFocus();
+      expect(buttons[1]).not.toHaveFocus();
+    });
+
+    it('moves focus with ArrowRight and updates the tab stop', () => {
+      renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+      const buttons = getToolbarButtons();
+      const toolbar = screen.getByRole('toolbar');
+
+      buttons[0].focus();
+      fireEvent.keyDown(toolbar, { key: 'ArrowRight' });
+
+      expect(buttons[1]).toHaveFocus();
+      expect(buttons[1].tabIndex).toBe(0);
+      expect(buttons[0].tabIndex).toBe(-1);
+    });
+
+    it('moves focus with ArrowLeft and wraps from the first to the last control', () => {
+      renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+      const buttons = getToolbarButtons();
+      const toolbar = screen.getByRole('toolbar');
+
+      buttons[0].focus();
+      fireEvent.keyDown(toolbar, { key: 'ArrowLeft' });
+
+      expect(buttons[buttons.length - 1]).toHaveFocus();
+    });
+
+    it('wraps from the last control to the first with ArrowRight', () => {
+      renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+      const buttons = getToolbarButtons();
+      const toolbar = screen.getByRole('toolbar');
+
+      buttons[buttons.length - 1].focus();
+      fireEvent.keyDown(toolbar, { key: 'ArrowRight' });
+
+      expect(buttons[0]).toHaveFocus();
+    });
+
+    it('jumps to first/last with Home and End', () => {
+      renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+      const buttons = getToolbarButtons();
+      const toolbar = screen.getByRole('toolbar');
+
+      buttons[2].focus();
+      fireEvent.keyDown(toolbar, { key: 'End' });
+      expect(buttons[buttons.length - 1]).toHaveFocus();
+
+      fireEvent.keyDown(toolbar, { key: 'Home' });
+      expect(buttons[0]).toHaveFocus();
+    });
+
+    it('updates the roving tab stop when a button gains focus directly', () => {
+      renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+      const buttons = getToolbarButtons();
+
+      fireEvent.focus(buttons[3]);
+
+      expect(buttons[3].tabIndex).toBe(0);
+      expect(buttons[0].tabIndex).toBe(-1);
+    });
+
+    it('preserves aria-pressed semantics on toolbar toggles', () => {
+      renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+      expect(screen.getByLabelText('Bold')).toHaveAttribute('aria-pressed', 'false');
+      expect(screen.getByLabelText('Bold')).toHaveAttribute('aria-label', 'Bold');
+    });
+  });
+
   // Helper to find a command handler registered with the mock editor
   const getRegisteredHandler = (command) => {
     const call = mockEditor.registerCommand.mock.calls.find(([cmd]) => cmd === command);

@@ -179,6 +179,10 @@ export default function Editor({ onContentChange }) {
                 <li>
                   <kbd>Esc</kbd>: Exit editor focus
                 </li>
+                <li>
+                  <kbd>←</kbd> / <kbd>→</kbd> (in toolbar): Move between toolbar buttons;{' '}
+                  <kbd>Home</kbd> / <kbd>End</kbd> jump to first/last
+                </li>
               </ul>
               <h3>Usage Tips</h3>
               <p>Use the toolbar buttons or keyboard shortcuts to format your content.</p>
