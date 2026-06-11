@@ -12,7 +12,8 @@ export function PastePlugin() {
   const [editor] = useLexicalComposerContext();
   const plainTextNextRef = useRef(false);
 
-  // Track Ctrl/Cmd+Shift+V so the next paste is treated as plain text
+  // Track Ctrl/Cmd+Shift+V so the next paste is treated as plain text.
+  // Scope the listener to the editor root so the shortcut only arms this editor.
   useEffect(() => {
     const handleKeyDown = (e) => {
       const isMac = navigator.platform.toUpperCase().includes('MAC');
@@ -26,9 +27,15 @@ export function PastePlugin() {
       }
     };
 
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []);
+    return editor.registerRootListener((rootElement, prevRootElement) => {
+      if (prevRootElement) {
+        prevRootElement.removeEventListener('keydown', handleKeyDown);
+      }
+      if (rootElement) {
+        rootElement.addEventListener('keydown', handleKeyDown);
+      }
+    });
+  }, [editor]);
 
   useEffect(() => {
     return editor.registerCommand(
@@ -67,7 +74,9 @@ export function PastePlugin() {
               selection.insertNodes(nodes);
             }
           } catch (error) {
-            console.error('Error sanitizing pasted content:', error);
+            if (process.env.NODE_ENV !== 'production') {
+              console.error('Error sanitizing pasted content:', error);
+            }
             // Fall back to plain text so the paste is never lost
             const selection = $getSelection();
             if ($isRangeSelection(selection) && text) {

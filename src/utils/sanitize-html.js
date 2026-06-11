@@ -65,7 +65,9 @@ function sanitizeElement(element, doc) {
     }
   });
 
-  const tag = element.tagName;
+  // Uppercase so foreign-content elements (SVG/MathML) — whose tagName preserves
+  // case, e.g. 'svg' — still match the uppercase tag sets below.
+  const tag = element.tagName.toUpperCase();
 
   if (DROPPED_TAGS.has(tag)) {
     element.remove();
@@ -78,7 +80,7 @@ function sanitizeElement(element, doc) {
     Array.from(element.attributes).forEach((attr) => element.removeAttribute(attr.name));
     if (tag === 'A') {
       if (href && SAFE_HREF.test(href.trim())) {
-        element.setAttribute('href', href);
+        element.setAttribute('href', href.trim());
       } else {
         // Unsafe or missing href: keep the text, drop the link
         unwrap(element);

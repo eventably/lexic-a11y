@@ -55,6 +55,16 @@ describe('sanitizePastedHtml', () => {
     expect(sanitizePastedHtml(html)).toBe('Click me');
   });
 
+  it('drops data: URI links but keeps their text', () => {
+    const html = '<a href="data:text/html,<script>alert(1)</script>">Click me</a>';
+    expect(sanitizePastedHtml(html)).toBe('Click me');
+  });
+
+  it('drops embedded SVG (foreign-content tag case) entirely', () => {
+    const html = '<p>before<svg><script>alert(1)</script></svg>after</p>';
+    expect(sanitizePastedHtml(html)).toBe('<p>beforeafter</p>');
+  });
+
   it('unwraps unsupported inline elements but keeps their content', () => {
     const html = '<p><font color="red">Old-school</font> <span>span text</span></p>';
     expect(sanitizePastedHtml(html)).toBe('<p>Old-school span text</p>');

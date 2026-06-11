@@ -5,6 +5,9 @@ import { PastePlugin } from '../components/PastePlugin';
 // Capture the PASTE_COMMAND handler registered with the editor
 let pasteHandler = null;
 
+// The editor root element the keydown listener is attached to
+let rootEl = null;
+
 const mockEditor = {
   registerCommand: jest.fn((command, handler) => {
     if (command === 'paste') {
@@ -13,6 +16,11 @@ const mockEditor = {
     return () => {
       pasteHandler = null;
     };
+  }),
+  registerRootListener: jest.fn((cb) => {
+    rootEl = document.createElement('div');
+    cb(rootEl, null);
+    return () => {};
   }),
   update: jest.fn((cb) => cb()),
 };
@@ -94,7 +102,7 @@ describe('PastePlugin', () => {
   it('pastes as plain text after Ctrl+Shift+V even when HTML is available', () => {
     render(<PastePlugin />);
 
-    fireEvent.keyDown(document, { key: 'V', ctrlKey: true, shiftKey: true });
+    fireEvent.keyDown(rootEl, { key: 'V', ctrlKey: true, shiftKey: true });
     const event = makePasteEvent({ html: '<p><strong>rich</strong></p>', text: 'rich' });
     const handled = pasteHandler(event);
 
@@ -106,7 +114,7 @@ describe('PastePlugin', () => {
   it('only applies the plain-text mode to the next paste', () => {
     render(<PastePlugin />);
 
-    fireEvent.keyDown(document, { key: 'V', ctrlKey: true, shiftKey: true });
+    fireEvent.keyDown(rootEl, { key: 'V', ctrlKey: true, shiftKey: true });
     pasteHandler(makePasteEvent({ html: '<p>one</p>', text: 'one' }));
     mockSelection.insertRawText.mockClear();
 
