@@ -1,4 +1,5 @@
 // Editor.js
+import { CodeHighlightNode, CodeNode } from '@lexical/code';
 import { $generateHtmlFromNodes } from '@lexical/html';
 import { LinkNode } from '@lexical/link';
 import { ListItemNode, ListNode } from '@lexical/list';
@@ -6,19 +7,28 @@ import { LexicalComposer } from '@lexical/react/LexicalComposer';
 import { ContentEditable } from '@lexical/react/LexicalContentEditable';
 import LexicalErrorBoundary from '@lexical/react/LexicalErrorBoundary';
 import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
+import { HorizontalRuleNode } from '@lexical/react/LexicalHorizontalRuleNode';
+import { HorizontalRulePlugin } from '@lexical/react/LexicalHorizontalRulePlugin';
 import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin';
 import { ListPlugin } from '@lexical/react/LexicalListPlugin';
+import { MarkdownShortcutPlugin } from '@lexical/react/LexicalMarkdownShortcutPlugin';
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
+import { TablePlugin } from '@lexical/react/LexicalTablePlugin';
 import { HeadingNode, QuoteNode } from '@lexical/rich-text';
+import { TableCellNode, TableNode, TableRowNode } from '@lexical/table';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
+import { EDITOR_TRANSFORMERS } from '../utils/markdown-transformers';
 import { isSafeUrl } from '../utils/sanitize-url';
 
+import { HeadingOutlinePlugin } from './HeadingOutlinePlugin';
+import { ImageNode } from './ImageNode';
+import { PastePlugin } from './PastePlugin';
 import { ToolbarPlugin } from './ToolbarPlugin';
+import { WordCountPlugin } from './WordCountPlugin';
 // Temporarily comment out missing imports
-// import { ImageNode } from '@lexical/image';
-// import { HorizontalRuleNode } from '@lexical/react/LexicalHorizontalRuleNode';
 
 const theme = {
   text: {
@@ -27,7 +37,9 @@ const theme = {
     underline: 'underline',
     strikethrough: 'line-through',
     underlineStrikethrough: 'underline line-through',
+    code: 'editor-text-code',
   },
+  code: 'editor-code-block',
   heading: {
     h1: 'text-3xl font-bold mt-6 mb-4',
     h2: 'text-2xl font-bold mt-5 mb-3',
@@ -60,12 +72,18 @@ const editorConfig = {
     ListItemNode,
     QuoteNode,
     LinkNode,
-    // ImageNode,
-    // HorizontalRuleNode,
+    CodeNode,
+    CodeHighlightNode,
+    HorizontalRuleNode,
+    ImageNode,
+    TableNode,
+    TableRowNode,
+    TableCellNode,
   ],
 };
 
 export default function Editor({ onContentChange }) {
+  const { t } = useTranslation();
   const [showDocs, setShowDocs] = useState(false);
   const [, setHtmlOutput] = useState('');
 
@@ -76,13 +94,19 @@ export default function Editor({ onContentChange }) {
       <div className="editor-container">
         <div className="editor-content-area">
           <RichTextPlugin
-            contentEditable={<ContentEditable className="editor-input" />}
+            contentEditable={
+              <ContentEditable className="editor-input" ariaLabel={t('editorContent')} />
+            }
             placeholder={<div className="editor-placeholder">Start writing...</div>}
             ErrorBoundary={LexicalErrorBoundary}
           />
           <HistoryPlugin />
+          <HorizontalRulePlugin />
           <LinkPlugin validateUrl={isSafeUrl} />
           <ListPlugin />
+          <MarkdownShortcutPlugin transformers={EDITOR_TRANSFORMERS} />
+          <PastePlugin />
+          <TablePlugin />
           <OnChangePlugin
             onChange={(editorState, editor) => {
               editorState.read(() => {
@@ -92,8 +116,17 @@ export default function Editor({ onContentChange }) {
                 // Use a simple regex to clean up the utility classes
                 const cleanHtml = htmlString
                   .replace(/class="[^"]*"/g, '') // Remove all class attributes
-                  .replace(/<(h[1-6]|p|ul|ol|li)([^>]*)>/g, '<$1>') // Clean heading, paragraph, and list tags
-                  .replace(/<a([^>]*)(class="[^"]*")([^>]*)>/g, '<a$1$3>'); // Clean link tags
+                  // List longer tags before their prefixes (pre before p) so the
+                  // alternation doesn't rewrite <pre> as <p>.
+                  .replace(/<(h[1-6]|pre|p|ul|ol|li|code|hr)([^>]*)>/g, '<$1>') // Clean heading, paragraph, list, code, and hr tags
+                  .replace(/<a([^>]*)(class="[^"]*")([^>]*)>/g, '<a$1$3>') // Clean link tags
+                  .replace(/<colgroup[^>]*>[\s\S]*?<\/colgroup>/g, '') // Drop Lexical's <colgroup>/<col> sizing markup
+                  .replace(/<(table|thead|tbody|tr)([^>]*)>/g, '<$1>') // Clean table structure tags
+                  .replace(/(<(?:td|th)\b[^>]*?)\s+style="[^"]*"/g, '$1') // Strip inline cell styles at any attribute position
+                  .replace(/(<(?:td|th)\b[^>]*?)\s+>/g, '$1>') // Tidy trailing whitespace left by attribute stripping
+                  // Header cells are all column headers (header row only), so scope="col".
+                  // The (?![a-z]) guard keeps this from matching <thead>.
+                  .replace(/<th(?![a-z])(?![^>]*\bscope=)([^>]*)>/g, '<th scope="col"$1>'); // Ensure header cells carry scope
 
                 setHtmlOutput(cleanHtml);
                 onContentChange(cleanHtml);
@@ -101,6 +134,8 @@ export default function Editor({ onContentChange }) {
             }}
           />
         </div>
+        <HeadingOutlinePlugin />
+        <WordCountPlugin />
       </div>
 
       {showDocs ? (
@@ -119,6 +154,13 @@ export default function Editor({ onContentChange }) {
             <div className="editor-docs-body">
               <ul>
                 <li>
+                  <kbd>Ctrl</kbd> + <kbd>Z</kbd>: Undo
+                </li>
+                <li>
+                  <kbd>Ctrl</kbd> + <kbd>Y</kbd> (or <kbd>Ctrl</kbd> + <kbd>Shift</kbd> +{' '}
+                  <kbd>Z</kbd>): Redo
+                </li>
+                <li>
                   <kbd>Ctrl</kbd> + <kbd>B</kbd>: Bold
                 </li>
                 <li>
@@ -135,6 +177,9 @@ export default function Editor({ onContentChange }) {
                 </li>
                 <li>
                   <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>7</kbd>: Numbered List
+                </li>
+                <li>
+                  <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Q</kbd>: Blockquote
                 </li>
                 <li>
                   <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>1</kbd>: Heading 1
@@ -155,7 +200,14 @@ export default function Editor({ onContentChange }) {
                   <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>6</kbd>: Heading 6
                 </li>
                 <li>
+                  <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>V</kbd>: Paste as plain text
+                </li>
+                <li>
                   <kbd>Esc</kbd>: Exit editor focus
+                </li>
+                <li>
+                  <kbd>←</kbd> / <kbd>→</kbd> (in toolbar): Move between toolbar buttons;{' '}
+                  <kbd>Home</kbd> / <kbd>End</kbd> jump to first/last
                 </li>
               </ul>
               <h3>Usage Tips</h3>

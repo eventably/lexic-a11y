@@ -1,0 +1,30 @@
+id: editor-undo-redo
+title: "Undo And Redo Edits"
+type: positive
+description: "Verify that a user can undo a destructive edit with Ctrl/Cmd+Z and redo it
+  with Ctrl/Cmd+Y (or Ctrl/Cmd+Shift+Z), entirely from the keyboard."
+
+preconditions:
+  - "The demo app is running (npm start)"
+  - "The editor is empty"
+
+start_location: "http://localhost:4001"
+
+expected_result: "Deleted content is restored by undo and removed again by redo"
+
+steps:
+  - locate: field "Editor content"
+  - focus: field "Editor content"
+  - keyboard: "Keep me safe"
+  - verify: text "Keep me safe"
+
+  # Destructive edit
+  - keyboard: "ControlOrMeta+a"
+  - keyboard: "Delete"
+
+  # Undo restores
+  - keyboard: "ControlOrMeta+z"
+  - verify: text "Keep me safe"
+
+  # Redo removes again
+  - keyboard: "ControlOrMeta+Shift+z"
