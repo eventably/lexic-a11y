@@ -92,6 +92,13 @@ jest.mock('../components/ImageNode', () => ({
   ImageNode: class ImageNode {},
   $createImageNode: jest.fn(() => ({})),
 }));
+jest.mock('@lexical/table', () => ({
+  TableNode: class TableNode {},
+  TableRowNode: class TableRowNode {},
+  TableCellNode: class TableCellNode {},
+  INSERT_TABLE_COMMAND: 'insert-table',
+}));
+jest.mock('@lexical/react/LexicalTablePlugin', () => ({ TablePlugin: () => null }));
 jest.mock('@lexical/react/LexicalHorizontalRuleNode', () => ({
   HorizontalRuleNode: class HorizontalRuleNode {},
   INSERT_HORIZONTAL_RULE_COMMAND: 'insert-horizontal-rule',

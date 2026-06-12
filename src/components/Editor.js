@@ -14,7 +14,9 @@ import { ListPlugin } from '@lexical/react/LexicalListPlugin';
 import { MarkdownShortcutPlugin } from '@lexical/react/LexicalMarkdownShortcutPlugin';
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
+import { TablePlugin } from '@lexical/react/LexicalTablePlugin';
 import { HeadingNode, QuoteNode } from '@lexical/rich-text';
+import { TableCellNode, TableNode, TableRowNode } from '@lexical/table';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -73,6 +75,9 @@ const editorConfig = {
     CodeHighlightNode,
     HorizontalRuleNode,
     ImageNode,
+    TableNode,
+    TableRowNode,
+    TableCellNode,
   ],
 };
 
@@ -100,6 +105,7 @@ export default function Editor({ onContentChange }) {
           <ListPlugin />
           <MarkdownShortcutPlugin transformers={EDITOR_TRANSFORMERS} />
           <PastePlugin />
+          <TablePlugin />
           <OnChangePlugin
             onChange={(editorState, editor) => {
               editorState.read(() => {
@@ -112,7 +118,14 @@ export default function Editor({ onContentChange }) {
                   // List longer tags before their prefixes (pre before p) so the
                   // alternation doesn't rewrite <pre> as <p>.
                   .replace(/<(h[1-6]|pre|p|ul|ol|li|code|hr)([^>]*)>/g, '<$1>') // Clean heading, paragraph, list, code, and hr tags
-                  .replace(/<a([^>]*)(class="[^"]*")([^>]*)>/g, '<a$1$3>'); // Clean link tags
+                  .replace(/<a([^>]*)(class="[^"]*")([^>]*)>/g, '<a$1$3>') // Clean link tags
+                  .replace(/<colgroup[^>]*>[\s\S]*?<\/colgroup>/g, '') // Drop Lexical's <colgroup>/<col> sizing markup
+                  .replace(/<(table|thead|tbody|tr)([^>]*)>/g, '<$1>') // Clean table structure tags
+                  .replace(/(<(?:td|th)\b[^>]*?)\s+style="[^"]*"/g, '$1') // Strip inline cell styles at any attribute position
+                  .replace(/(<(?:td|th)\b[^>]*?)\s+>/g, '$1>') // Tidy trailing whitespace left by attribute stripping
+                  // Header cells are all column headers (header row only), so scope="col".
+                  // The (?![a-z]) guard keeps this from matching <thead>.
+                  .replace(/<th(?![a-z])(?![^>]*\bscope=)([^>]*)>/g, '<th scope="col"$1>'); // Ensure header cells carry scope
 
                 setHtmlOutput(cleanHtml);
                 onContentChange(cleanHtml);
