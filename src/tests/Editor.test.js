@@ -11,15 +11,6 @@ jest.mock('@lexical/rich-text', () => ({
   QuoteNode: class QuoteNode {},
 }));
 
-jest.mock('@lexical/list', () => ({
-  ListNode: class ListNode {},
-  ListItemNode: class ListItemNode {},
-}));
-
-jest.mock('@lexical/link', () => ({
-  LinkNode: class LinkNode {},
-}));
-
 jest.mock('@lexical/table', () => ({
   TableNode: class TableNode {},
   TableRowNode: class TableRowNode {},
@@ -28,6 +19,20 @@ jest.mock('@lexical/table', () => ({
 
 jest.mock('@lexical/react/LexicalTablePlugin', () => ({
   TablePlugin: () => <div data-testid="table-plugin" />,
+}));
+
+jest.mock('@lexical/code', () => ({
+  CodeNode: class CodeNode {},
+  CodeHighlightNode: class CodeHighlightNode {},
+}));
+
+jest.mock('@lexical/list', () => ({
+  ListNode: class ListNode {},
+  ListItemNode: class ListItemNode {},
+}));
+
+jest.mock('@lexical/link', () => ({
+  LinkNode: class LinkNode {},
 }));
 
 // Mock the Lexical components and plugins
@@ -56,8 +61,22 @@ jest.mock('@lexical/react/LexicalHistoryPlugin', () => ({
   HistoryPlugin: () => <div data-testid="history-plugin" />,
 }));
 
+jest.mock('@lexical/react/LexicalHorizontalRuleNode', () => ({
+  HorizontalRuleNode: class HorizontalRuleNode {},
+  INSERT_HORIZONTAL_RULE_COMMAND: 'insert-horizontal-rule',
+}));
+
+jest.mock('@lexical/react/LexicalHorizontalRulePlugin', () => ({
+  HorizontalRulePlugin: () => <div data-testid="horizontal-rule-plugin" />,
+}));
+
+jest.mock('@lexical/react/LexicalMarkdownShortcutPlugin', () => ({
+  MarkdownShortcutPlugin: () => <div data-testid="markdown-shortcut-plugin" />,
+}));
+
 // Capture the OnChangePlugin onChange prop so tests can exercise the export path
 const mockOnChangeCapture = {};
+
 jest.mock('@lexical/react/LexicalOnChangePlugin', () => ({
   OnChangePlugin: ({ onChange }) => {
     mockOnChangeCapture.onChange = onChange;
@@ -80,6 +99,28 @@ jest.mock('@lexical/react/LexicalListPlugin', () => ({
 
 jest.mock('@lexical/html', () => ({
   $generateHtmlFromNodes: jest.fn(() => '<p>Test HTML Output</p>'),
+}));
+
+jest.mock('../components/HeadingOutlinePlugin', () => ({
+  HeadingOutlinePlugin: () => <div data-testid="heading-outline-plugin" />,
+}));
+
+jest.mock('../components/WordCountPlugin', () => ({
+  WordCountPlugin: () => <div data-testid="word-count-plugin" />,
+}));
+
+// Stub the curated transformers so the real @lexical/markdown (which pulls in
+// the mocked lexical packages above) is never loaded in this suite
+jest.mock('../utils/markdown-transformers', () => ({
+  EDITOR_TRANSFORMERS: [],
+}));
+
+jest.mock('../components/PastePlugin', () => ({
+  PastePlugin: () => <div data-testid="paste-plugin" />,
+}));
+
+jest.mock('../components/ImageNode', () => ({
+  ImageNode: class ImageNode {},
 }));
 
 // Mock ToolbarPlugin to expose setShowDocs trigger
@@ -113,10 +154,29 @@ describe('Editor Component', () => {
     renderWithI18n(<Editor onContentChange={mockOnContentChange} />);
 
     expect(screen.getByTestId('history-plugin')).toBeInTheDocument();
+    expect(screen.getByTestId('horizontal-rule-plugin')).toBeInTheDocument();
     expect(screen.getByTestId('link-plugin')).toBeInTheDocument();
     expect(screen.getByTestId('list-plugin')).toBeInTheDocument();
+    expect(screen.getByTestId('markdown-shortcut-plugin')).toBeInTheDocument();
     expect(screen.getByTestId('on-change-plugin')).toBeInTheDocument();
+    expect(screen.getByTestId('paste-plugin')).toBeInTheDocument();
+    expect(screen.getByTestId('heading-outline-plugin')).toBeInTheDocument();
+    expect(screen.getByTestId('word-count-plugin')).toBeInTheDocument();
     expect(screen.getByTestId('table-plugin')).toBeInTheDocument();
+  });
+
+  it('exports a clean semantic <hr> through the HTML cleanup path', () => {
+    const { $generateHtmlFromNodes } = require('@lexical/html');
+    const mockOnContentChange = jest.fn();
+    renderWithI18n(<Editor onContentChange={mockOnContentChange} />);
+
+    // Simulate Lexical emitting an hr with theme classes/attributes
+    $generateHtmlFromNodes.mockReturnValueOnce(
+      '<p>Intro</p><hr class="my-4" data-x="1"><p>End</p>',
+    );
+    mockOnChangeCapture.onChange({ read: (cb) => cb() }, {});
+
+    expect(mockOnContentChange).toHaveBeenCalledWith('<p>Intro</p><hr><p>End</p>');
   });
 
   it('exports clean, semantic table HTML with scoped header cells', () => {
@@ -190,5 +250,21 @@ describe('Editor Component', () => {
 
     expect(screen.getByText('Usage Tips')).toBeInTheDocument();
     expect(screen.getByText(/Use the toolbar buttons or keyboard shortcuts/)).toBeInTheDocument();
+  });
+
+  it('exports semantic <pre>/<code> without utility classes', () => {
+    const { $generateHtmlFromNodes } = require('@lexical/html');
+    const mockOnContentChange = jest.fn();
+    renderWithI18n(<Editor onContentChange={mockOnContentChange} />);
+
+    $generateHtmlFromNodes.mockReturnValueOnce(
+      '<pre class="editor-code-block"><code class="editor-text-code">const x = 1;</code></pre>' +
+        '<p>uses <code class="editor-text-code">inline</code> code</p>',
+    );
+    mockOnChangeCapture.onChange({ read: (cb) => cb() }, {});
+
+    expect(mockOnContentChange).toHaveBeenCalledWith(
+      '<pre><code>const x = 1;</code></pre><p>uses <code>inline</code> code</p>',
+    );
   });
 });

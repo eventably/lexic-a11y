@@ -1,0 +1,42 @@
+id: editor-link-insert
+title: "Insert A Link Through The Accessible Dialog"
+type: positive
+description: "Verify that a user can select text, open the link dialog from the toolbar,
+  receive focus in the URL field, enter a URL, and insert a link."
+
+preconditions:
+  - "The demo app is running (npm start)"
+  - "The editor is empty"
+
+start_location: "http://localhost:4001"
+
+expected_result: "The selected text becomes a hyperlink pointing at the entered URL and focus
+  returns to the editor"
+
+data:
+  url: "https://lexical.dev"
+
+steps:
+  - locate: field "Editor content"
+  - focus: field "Editor content"
+  - keyboard: "lexical"
+  - keyboard: "ControlOrMeta+a"
+
+  - locate: button "Insert Link"
+  - activate: button "Insert Link"
+
+  - locate: dialog "Insert Link"
+  - verify: dialog "Insert Link" attribute "aria-modal" is "true"
+
+  # Audit the open dialog before interacting with it
+  - audit: dialog "Insert Link" level "AA"
+
+  # Focus lands in the URL field automatically
+  - locate: field "URL"
+  - focus: field "URL"
+  - enter: field "URL" value "{{ url }}"
+
+  - locate: button "Insert"
+  - activate: button "Insert"
+
+  - locate: link "lexical"
