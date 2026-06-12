@@ -48,7 +48,10 @@ i18n.use(initReactI18next).init({
         decorativeImage: 'This image is decorative (no alt text needed)',
         // New translations for link dialog
         insertLink: 'Insert Link',
+        editLink: 'Edit Link',
+        removeLink: 'Remove Link',
         url: 'URL',
+        linkUrlInvalid: 'Enter a valid http(s), mailto, tel, or sms URL.',
         text: 'Text',
         linkText: 'Link Text',
         cancel: 'Cancel',

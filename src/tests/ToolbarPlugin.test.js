@@ -1,4 +1,5 @@
 import { $createCodeNode, $isCodeNode } from '@lexical/code';
+import { $isLinkNode } from '@lexical/link';
 import { $createQuoteNode, $isQuoteNode } from '@lexical/rich-text';
 import { $setBlocksType } from '@lexical/selection';
 import { act, fireEvent, render, screen } from '@testing-library/react';
@@ -29,6 +30,8 @@ jest.mock('@lexical/react/LexicalComposerContext', () => ({
 // Mock Lexical commands
 const mockAnchorNode = {
   getParent: jest.fn(() => null),
+  getURL: jest.fn(() => 'https://example.com'),
+  getTextContent: jest.fn(() => 'Example link'),
 };
 
 // Mock text nodes returned by selection.getNodes() for clear-formatting tests
@@ -97,6 +100,7 @@ jest.mock('@lexical/rich-text', () => ({
 
 jest.mock('@lexical/link', () => ({
   TOGGLE_LINK_COMMAND: 'toggle-link',
+  $isLinkNode: jest.fn(() => false),
 }));
 
 jest.mock('@lexical/code', () => ({
@@ -811,5 +815,150 @@ describe('ToolbarPlugin Component', () => {
 
     // Verify editor state was read to get selection
     expect(mockEditor.getEditorState().read).toHaveBeenCalled();
+  });
+
+  it('opens the accessible link dialog with Ctrl+K instead of window.prompt', () => {
+    const promptSpy = jest.fn();
+    window.prompt = promptSpy;
+
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    fireEvent.keyDown(document, { key: 'k', ctrlKey: true });
+
+    expect(promptSpy).not.toHaveBeenCalled();
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByLabelText(/URL/)).toBeInTheDocument();
+  });
+
+  it('reflects cursor-in-link state on the link button via aria-pressed', () => {
+    $isLinkNode.mockReturnValue(true);
+
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    const linkButton = screen.getByLabelText('Edit Link');
+    expect(linkButton).toHaveAttribute('aria-pressed', 'true');
+
+    $isLinkNode.mockReturnValue(false);
+  });
+
+  it('pre-fills the dialog with the existing link URL and text in edit mode', async () => {
+    const user = userEvent.setup();
+    $isLinkNode.mockReturnValue(true);
+
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    await user.click(screen.getByLabelText('Edit Link'));
+
+    expect(screen.getByRole('heading', { name: 'Edit Link' })).toBeInTheDocument();
+    expect(screen.getByLabelText(/URL/)).toHaveValue('https://example.com');
+    expect(screen.getByLabelText(/Text/)).toHaveValue('Example link');
+
+    $isLinkNode.mockReturnValue(false);
+  });
+
+  it('removes an existing link via the Remove Link button', async () => {
+    const user = userEvent.setup();
+    $isLinkNode.mockReturnValue(true);
+
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    await user.click(screen.getByLabelText('Edit Link'));
+    await user.click(screen.getByRole('button', { name: 'Remove Link' }));
+
+    expect(mockEditor.dispatchCommand).toHaveBeenCalledWith('toggle-link', null);
+    // Dialog closes and focus returns to the editor
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(mockEditor.focus).toHaveBeenCalled();
+
+    $isLinkNode.mockReturnValue(false);
+  });
+
+  it('does not show Remove Link when inserting a new link', async () => {
+    const user = userEvent.setup();
+
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    await user.click(screen.getByLabelText('Insert Link'));
+
+    expect(screen.getByRole('heading', { name: 'Insert Link' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Remove Link' })).not.toBeInTheDocument();
+  });
+
+  it('returns focus to the editor when the dialog is cancelled', async () => {
+    const user = userEvent.setup();
+
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    await user.click(screen.getByLabelText('Insert Link'));
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(mockEditor.focus).toHaveBeenCalled();
+  });
+
+  it('rejects a javascript: URL: disables Insert, shows an error, dispatches nothing', async () => {
+    const user = userEvent.setup();
+
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    await user.click(screen.getByLabelText('Insert Link'));
+    await user.type(screen.getByLabelText(/URL/), 'javascript:alert(1)');
+
+    const insertButton = screen.getByRole('button', { name: 'Insert' });
+    expect(insertButton).toBeDisabled();
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+    expect(screen.getByLabelText(/URL/)).toHaveAttribute('aria-invalid', 'true');
+
+    // Even if the click somehow fires, no link command is dispatched.
+    await user.click(insertButton);
+    expect(mockEditor.dispatchCommand).not.toHaveBeenCalledWith('toggle-link', expect.anything());
+  });
+
+  it('enables Insert for a safe https URL', async () => {
+    const user = userEvent.setup();
+
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    await user.click(screen.getByLabelText('Insert Link'));
+    await user.type(screen.getByLabelText(/URL/), 'https://example.com');
+
+    expect(screen.getByRole('button', { name: 'Insert' })).toBeEnabled();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('edits an existing link in place without duplicating its text', async () => {
+    jest.useFakeTimers();
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+
+    // Cursor is inside a link: $isLinkNode true => edit mode, and findLinkNode
+    // returns the anchor node, which must behave like a LinkNode.
+    $isLinkNode.mockReturnValue(true);
+    mockAnchorNode.select = jest.fn();
+    mockAnchorNode.getChildrenSize = jest.fn(() => 1);
+    mockSelection.insertText.mockClear();
+    mockEditor.dispatchCommand.mockClear();
+
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    // Edit mode prefills the URL (https://example.com); submit it.
+    await user.click(screen.getByLabelText('Edit Link'));
+    await user.click(screen.getByRole('button', { name: 'Insert' }));
+
+    // The update runs on a 50ms timeout after the dialog closes.
+    act(() => {
+      jest.advanceTimersByTime(60);
+    });
+
+    // The existing link's contents are selected and its URL updated in place;
+    // the link text is NOT re-inserted (the bug this guards against).
+    expect(mockAnchorNode.select).toHaveBeenCalled();
+    expect(mockEditor.dispatchCommand).toHaveBeenCalledWith('toggle-link', {
+      url: 'https://example.com',
+      target: '_blank',
+    });
+    expect(mockSelection.insertText).not.toHaveBeenCalled();
+
+    $isLinkNode.mockReturnValue(false);
+    jest.useRealTimers();
   });
 });

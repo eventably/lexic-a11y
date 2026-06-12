@@ -21,6 +21,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { EDITOR_TRANSFORMERS } from '../utils/markdown-transformers';
+import { isSafeUrl } from '../utils/sanitize-url';
 
 import { HeadingOutlinePlugin } from './HeadingOutlinePlugin';
 import { ImageNode } from './ImageNode';
@@ -101,7 +102,7 @@ export default function Editor({ onContentChange }) {
           />
           <HistoryPlugin />
           <HorizontalRulePlugin />
-          <LinkPlugin />
+          <LinkPlugin validateUrl={isSafeUrl} />
           <ListPlugin />
           <MarkdownShortcutPlugin transformers={EDITOR_TRANSFORMERS} />
           <PastePlugin />
@@ -169,7 +170,7 @@ export default function Editor({ onContentChange }) {
                   <kbd>Ctrl</kbd> + <kbd>U</kbd>: Underline
                 </li>
                 <li>
-                  <kbd>Ctrl</kbd> + <kbd>K</kbd>: Insert Link
+                  <kbd>Ctrl</kbd> + <kbd>K</kbd>: Insert or Edit Link
                 </li>
                 <li>
                   <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>8</kbd>: Bullet List
