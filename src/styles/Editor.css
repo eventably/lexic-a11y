@@ -278,7 +278,8 @@ kbd {
   cursor: not-allowed;
 }
 
-.editor-toolbar button[aria-disabled='true']:hover {
+.editor-toolbar button[aria-disabled='true']:hover,
+.editor-toolbar button[aria-disabled='true']:focus {
   background-color: var(--background);
   border-color: var(--border-color);
   color: var(--text-color);
@@ -300,6 +301,23 @@ kbd {
 .editor-toolbar button[aria-pressed='true'] svg,
 .editor-toolbar button.active svg {
   color: var(--primary-dark);
+}
+
+/* In Windows High Contrast / forced-colors mode the system overrides
+   background-color and drops box-shadow, which would hide the pressed state
+   from sighted users. A border keyed to the system Highlight color keeps the
+   selected state visible there. (Screen-reader users always get aria-pressed.) */
+@media (forced-colors: active) {
+  .editor-toolbar button.active,
+  .editor-toolbar button[aria-pressed='true'] {
+    border: 2px solid Highlight;
+    color: Highlight;
+  }
+
+  .editor-toolbar button[aria-pressed='true'] svg,
+  .editor-toolbar button.active svg {
+    color: Highlight;
+  }
 }
 
 .editor-toolbar button:focus {
@@ -437,6 +455,17 @@ kbd {
   justify-content: flex-end;
   gap: 8px;
   margin-top: 10px;
+}
+
+@media screen and (prefers-reduced-motion: reduce) {
+  .cancel-button,
+  .insert-button {
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: none;
+  }
 }
 
 .cancel-button,

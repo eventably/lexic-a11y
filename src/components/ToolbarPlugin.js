@@ -593,34 +593,16 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
 
             // Check for text formatting (bold, italic, etc.)
             try {
-              // Only check format types when there's actual text content and selection is not collapsed
-              const textContent = selection.getTextContent();
-              const hasTextAndSelection =
-                textContent && textContent.length > 0 && !selection.isCollapsed();
-
-              // Default to false when no text is selected
-              let boldActive = false;
-              let italicActive = false;
-              let underlineActive = false;
-              let strikethroughActive = false;
-              let inlineCodeActive = false;
-
-              if (hasTextAndSelection) {
-                // In Lexical, format types are represented by numerical values
-                // We'll use the hasFormat method that's available on the selection
-                boldActive = selection.hasFormat('bold');
-                italicActive = selection.hasFormat('italic');
-                underlineActive = selection.hasFormat('underline');
-                strikethroughActive = selection.hasFormat('strikethrough');
-                inlineCodeActive = selection.hasFormat('code');
-              }
-
-              // Update state for each format type
-              setIsBold(boldActive);
-              setIsItalic(italicActive);
-              setIsUnderline(underlineActive);
-              setIsStrikethrough(strikethroughActive);
-              setIsInlineCode(inlineCodeActive);
+              // Reflect the format that applies at the current selection. This
+              // includes a collapsed caret: Lexical's hasFormat() returns the
+              // format that newly typed text would take, so the buttons light up
+              // when the cursor simply sits inside formatted text — matching the
+              // behavior users expect from other rich-text editors.
+              setIsBold(selection.hasFormat('bold'));
+              setIsItalic(selection.hasFormat('italic'));
+              setIsUnderline(selection.hasFormat('underline'));
+              setIsStrikethrough(selection.hasFormat('strikethrough'));
+              setIsInlineCode(selection.hasFormat('code'));
             } catch (_error) {
               // Reset formatting state on error
               setIsBold(false);
