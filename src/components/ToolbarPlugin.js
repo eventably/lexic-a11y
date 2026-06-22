@@ -442,6 +442,50 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
               editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined);
             }
             break;
+          case 'e':
+            // Ctrl/Cmd + E toggles inline code; + Shift toggles a code block
+            e.preventDefault();
+            if (e.shiftKey) {
+              toggleCodeBlock();
+            } else {
+              editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'code');
+            }
+            break;
+          case 'x':
+            if (e.shiftKey) {
+              // Ctrl/Cmd + Shift + X toggles strikethrough
+              e.preventDefault();
+              editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'strikethrough');
+            }
+            break;
+          case '\\':
+            // Ctrl/Cmd + \ clears formatting (Google Docs convention)
+            e.preventDefault();
+            clearFormatting();
+            break;
+          case 'm':
+            if (e.shiftKey) {
+              // Ctrl/Cmd + Shift + M opens the insert-image dialog
+              e.preventDefault();
+              setShowImageDialog(true);
+            }
+            break;
+          case 'l':
+            if (e.shiftKey) {
+              // Ctrl/Cmd + Shift + L opens the insert-table dialog
+              e.preventDefault();
+              setShowTableDialog(true);
+            }
+            break;
+          case '-':
+          case '_':
+            // Ctrl/Cmd + Shift + - inserts a horizontal rule (Shift+- is '_'
+            // on US layouts, so accept both keys)
+            if (e.shiftKey) {
+              e.preventDefault();
+              editor.dispatchCommand(INSERT_HORIZONTAL_RULE_COMMAND, undefined);
+            }
+            break;
           default:
             break;
         }
@@ -482,7 +526,16 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [editor, setShowDocs, t, setHeading, openLinkDialog, toggleQuote]);
+  }, [
+    editor,
+    setShowDocs,
+    t,
+    setHeading,
+    openLinkDialog,
+    toggleQuote,
+    toggleCodeBlock,
+    clearFormatting,
+  ]);
 
   // Register Escape key to close link dialog
   useEffect(() => {

@@ -772,6 +772,65 @@ describe('ToolbarPlugin Component', () => {
     expect(mockEditor.update).toHaveBeenCalled();
   });
 
+  it('toggles strikethrough with the Ctrl+Shift+X keyboard shortcut', () => {
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    fireEvent.keyDown(document, { key: 'X', ctrlKey: true, shiftKey: true });
+
+    expect(mockEditor.dispatchCommand).toHaveBeenCalledWith('format-text', 'strikethrough');
+  });
+
+  it('toggles inline code with the Ctrl+E keyboard shortcut', () => {
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    fireEvent.keyDown(document, { key: 'e', ctrlKey: true });
+
+    expect(mockEditor.dispatchCommand).toHaveBeenCalledWith('format-text', 'code');
+  });
+
+  it('toggles a code block with the Ctrl+Shift+E keyboard shortcut', () => {
+    mockEditor.update.mockClear();
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    fireEvent.keyDown(document, { key: 'E', ctrlKey: true, shiftKey: true });
+
+    expect(mockEditor.update).toHaveBeenCalled();
+  });
+
+  it('clears formatting with the Ctrl+\\ keyboard shortcut', () => {
+    mockEditor.update.mockClear();
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    fireEvent.keyDown(document, { key: '\\', ctrlKey: true });
+
+    expect(mockEditor.update).toHaveBeenCalled();
+  });
+
+  it('inserts a horizontal rule with the Ctrl+Shift+- keyboard shortcut', () => {
+    mockEditor.dispatchCommand.mockClear();
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    fireEvent.keyDown(document, { key: '_', ctrlKey: true, shiftKey: true });
+
+    expect(mockEditor.dispatchCommand).toHaveBeenCalledWith('insert-horizontal-rule', undefined);
+  });
+
+  it('opens the image dialog with the Ctrl+Shift+M keyboard shortcut', () => {
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    fireEvent.keyDown(document, { key: 'M', ctrlKey: true, shiftKey: true });
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+  });
+
+  it('opens the table dialog with the Ctrl+Shift+L keyboard shortcut', () => {
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    fireEvent.keyDown(document, { key: 'L', ctrlKey: true, shiftKey: true });
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+  });
+
   it('renders the horizontal rule button', () => {
     renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
 

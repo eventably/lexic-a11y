@@ -159,20 +159,50 @@
 
 .editor-docs-body h3 {
   color: var(--primary-dark);
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
 }
 
-.editor-docs-body ul {
-  list-style: none;
-  padding-left: 0;
+.editor-docs-platform-note {
+  margin: 0 0 1rem;
+  color: var(--text-light);
+  font-size: 0.9em;
+}
+
+/* Responsive multi-column layout for the shortcut categories. Each section is
+   kept whole so a category never splits across columns. */
+.shortcuts-sections {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.25rem 2rem;
+  margin-bottom: 1.25rem;
 }
 
-.editor-docs-body li {
-  margin-bottom: 0.75em;
-  display: flex;
-  align-items: center;
+.shortcuts-section {
+  min-width: 0;
+}
+
+/* Two-column key/description grid. `display: contents` on each row lets the
+   <dt> (keys) and <dd> (label) align to the parent grid's two tracks, so the
+   key combos and their descriptions never overlap regardless of length. */
+.shortcuts-list {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.4rem 1rem;
+  margin: 0;
+}
+
+.shortcut-row {
+  display: contents;
+}
+
+.shortcuts-list dt {
+  white-space: nowrap;
+}
+
+.shortcuts-list dd {
+  margin: 0;
+  align-self: center;
 }
 
 kbd {
@@ -278,7 +308,8 @@ kbd {
   cursor: not-allowed;
 }
 
-.editor-toolbar button[aria-disabled='true']:hover {
+.editor-toolbar button[aria-disabled='true']:hover,
+.editor-toolbar button[aria-disabled='true']:focus {
   background-color: var(--background);
   border-color: var(--border-color);
   color: var(--text-color);
@@ -437,6 +468,17 @@ kbd {
   justify-content: flex-end;
   gap: 8px;
   margin-top: 10px;
+}
+
+@media screen and (prefers-reduced-motion: reduce) {
+  .cancel-button,
+  .insert-button {
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: none;
+  }
 }
 
 .cancel-button,
