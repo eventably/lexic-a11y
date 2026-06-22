@@ -66,6 +66,61 @@
   text-decoration: underline line-through;
 }
 
+/* Table structure.
+   The Lexical theme maps tables to Tailwind-style utility class names that this
+   project does not ship, so without these rules tables render with no borders
+   and their grid structure is invisible while editing — making it very hard to
+   tell where cells begin/end or to navigate in and out of the table. These
+   rules are scoped to .editor-input so only the editing surface is affected;
+   exported HTML is cleaned separately and styled by the consuming app. */
+.editor-input table {
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: auto;
+  margin: 1rem 0;
+  border: 2px solid var(--primary-color);
+}
+
+.editor-input th,
+.editor-input td {
+  border: 1px solid var(--border-color);
+  padding: 8px 10px;
+  min-width: 5rem;
+  vertical-align: top;
+  text-align: start;
+}
+
+/* Header cells are visually distinct so the header row/column is obvious. */
+.editor-input th {
+  background-color: var(--primary-light);
+  font-weight: 600;
+}
+
+/* Zebra striping makes row boundaries easy to follow while navigating. */
+.editor-input tbody tr:nth-child(even) td {
+  background-color: rgb(67 97 238 / 4%);
+}
+
+/* Lexical adds this class to the table while cells are being drag-selected;
+   suppress native text selection so the cell-range highlight reads clearly. */
+.editor-input table.editor-table-selection {
+  user-select: none;
+}
+
+/* Forced-colors mode drops the custom border colors above; fall back to the
+   system colors so the grid stays visible. */
+@media (forced-colors: active) {
+  .editor-input table,
+  .editor-input th,
+  .editor-input td {
+    border: 1px solid CanvasText;
+  }
+
+  .editor-input th {
+    background-color: Canvas;
+  }
+}
+
 .editor-placeholder {
   /* No opacity: #757575 on white is 4.6:1 (AA); dimming it failed axe */
   color: var(--text-light);
@@ -278,7 +333,8 @@ kbd {
   cursor: not-allowed;
 }
 
-.editor-toolbar button[aria-disabled='true']:hover {
+.editor-toolbar button[aria-disabled='true']:hover,
+.editor-toolbar button[aria-disabled='true']:focus {
   background-color: var(--background);
   border-color: var(--border-color);
   color: var(--text-color);
@@ -437,6 +493,17 @@ kbd {
   justify-content: flex-end;
   gap: 8px;
   margin-top: 10px;
+}
+
+@media screen and (prefers-reduced-motion: reduce) {
+  .cancel-button,
+  .insert-button {
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: none;
+  }
 }
 
 .cancel-button,
