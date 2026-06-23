@@ -37,7 +37,13 @@ jest.mock('@lexical/link', () => ({
 
 // Mock the Lexical components and plugins
 jest.mock('@lexical/react/LexicalComposerContext', () => ({
-  useLexicalComposerContext: jest.fn(() => [{ update: jest.fn() }]),
+  useLexicalComposerContext: jest.fn(() => [
+    { update: jest.fn(), getEditorState: () => ({ read: (cb) => cb() }) },
+  ]),
+}));
+
+jest.mock('@lexical/markdown', () => ({
+  $convertToMarkdownString: jest.fn(() => '# Markdown output'),
 }));
 
 jest.mock('@lexical/react/LexicalComposer', () => ({
@@ -177,6 +183,36 @@ describe('Editor Component', () => {
     mockOnChangeCapture.onChange({ read: (cb) => cb() }, {});
 
     expect(mockOnContentChange).toHaveBeenCalledWith('<p>Intro</p><hr><p>End</p>');
+  });
+
+  it('emits Markdown when outputFormat is "markdown"', () => {
+    const { $convertToMarkdownString } = require('@lexical/markdown');
+    const { $generateHtmlFromNodes } = require('@lexical/html');
+    $convertToMarkdownString.mockClear();
+    $generateHtmlFromNodes.mockClear();
+    const mockOnContentChange = jest.fn();
+
+    renderWithI18n(<Editor onContentChange={mockOnContentChange} outputFormat="markdown" />);
+
+    // Both the on-edit path and the format-change sync use the Markdown serializer
+    mockOnChangeCapture.onChange({ read: (cb) => cb() }, {});
+
+    expect($convertToMarkdownString).toHaveBeenCalled();
+    expect($generateHtmlFromNodes).not.toHaveBeenCalled();
+    expect(mockOnContentChange).toHaveBeenCalledWith('# Markdown output');
+  });
+
+  it('emits HTML by default (outputFormat omitted)', () => {
+    const { $convertToMarkdownString } = require('@lexical/markdown');
+    $convertToMarkdownString.mockClear();
+    const mockOnContentChange = jest.fn();
+
+    renderWithI18n(<Editor onContentChange={mockOnContentChange} />);
+    mockOnChangeCapture.onChange({ read: (cb) => cb() }, {});
+
+    expect($convertToMarkdownString).not.toHaveBeenCalled();
+    // Default HTML mock output, cleaned of classes
+    expect(mockOnContentChange).toHaveBeenCalledWith('<p>Test HTML Output</p>');
   });
 
   it('exports clean, semantic table HTML with scoped header cells', () => {
