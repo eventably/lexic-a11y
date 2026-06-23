@@ -385,10 +385,15 @@ kbd {
 
 /* Convey the disabled state to sighted users too: undo/redo use aria-disabled
    (not native :disabled) so they stay focusable/announced, but without this the
-   button would still look active and clickable. */
+   button would still look active and clickable. Dim the icon rather than the
+   whole button — element opacity would also fade the box-shadow focus ring,
+   making the focus indicator a different (lighter) color than other buttons. */
 .editor-toolbar button[aria-disabled='true'] {
-  opacity: 50%;
   cursor: not-allowed;
+}
+
+.editor-toolbar button[aria-disabled='true'] svg {
+  opacity: 50%;
 }
 
 .editor-toolbar button[aria-disabled='true']:hover {
@@ -657,6 +662,17 @@ kbd {
   justify-content: flex-end;
   gap: 8px;
   margin-top: 10px;
+}
+
+@media screen and (prefers-reduced-motion: reduce) {
+  .cancel-button,
+  .insert-button {
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: none;
+  }
 }
 
 @media screen and (prefers-reduced-motion: reduce) {
