@@ -152,66 +152,187 @@ export default function Editor({ onContentChange }) {
               </button>
             </div>
             <div className="editor-docs-body">
-              <ul>
-                <li>
-                  <kbd>Ctrl</kbd> + <kbd>Z</kbd>: Undo
-                </li>
-                <li>
-                  <kbd>Ctrl</kbd> + <kbd>Y</kbd> (or <kbd>Ctrl</kbd> + <kbd>Shift</kbd> +{' '}
-                  <kbd>Z</kbd>): Redo
-                </li>
-                <li>
-                  <kbd>Ctrl</kbd> + <kbd>B</kbd>: Bold
-                </li>
-                <li>
-                  <kbd>Ctrl</kbd> + <kbd>I</kbd>: Italic
-                </li>
-                <li>
-                  <kbd>Ctrl</kbd> + <kbd>U</kbd>: Underline
-                </li>
-                <li>
-                  <kbd>Ctrl</kbd> + <kbd>K</kbd>: Insert or Edit Link
-                </li>
-                <li>
-                  <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>8</kbd>: Bullet List
-                </li>
-                <li>
-                  <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>7</kbd>: Numbered List
-                </li>
-                <li>
-                  <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Q</kbd>: Blockquote
-                </li>
-                <li>
-                  <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>1</kbd>: Heading 1
-                </li>
-                <li>
-                  <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>2</kbd>: Heading 2
-                </li>
-                <li>
-                  <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>3</kbd>: Heading 3
-                </li>
-                <li>
-                  <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>4</kbd>: Heading 4
-                </li>
-                <li>
-                  <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>5</kbd>: Heading 5
-                </li>
-                <li>
-                  <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>6</kbd>: Heading 6
-                </li>
-                <li>
-                  <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>V</kbd>: Paste as plain text
-                </li>
-                <li>
-                  <kbd>Esc</kbd>: Exit editor focus
-                </li>
-                <li>
-                  <kbd>←</kbd> / <kbd>→</kbd> (in toolbar): Move between toolbar buttons;{' '}
-                  <kbd>Home</kbd> / <kbd>End</kbd> jump to first/last
-                </li>
-              </ul>
-              <h3>Usage Tips</h3>
-              <p>Use the toolbar buttons or keyboard shortcuts to format your content.</p>
+              <p className="editor-docs-platform-note">
+                On macOS, use <kbd>Cmd</kbd> (⌘) wherever <kbd>Ctrl</kbd> is shown.
+              </p>
+              <div className="shortcuts-sections">
+                <section className="shortcuts-section">
+                  <h3>Text formatting</h3>
+                  <dl className="shortcuts-list">
+                    <div className="shortcut-row">
+                      <dt>
+                        <kbd>Ctrl</kbd> + <kbd>B</kbd>
+                      </dt>
+                      <dd>Bold</dd>
+                    </div>
+                    <div className="shortcut-row">
+                      <dt>
+                        <kbd>Ctrl</kbd> + <kbd>I</kbd>
+                      </dt>
+                      <dd>Italic</dd>
+                    </div>
+                    <div className="shortcut-row">
+                      <dt>
+                        <kbd>Ctrl</kbd> + <kbd>U</kbd>
+                      </dt>
+                      <dd>Underline</dd>
+                    </div>
+                    <div className="shortcut-row">
+                      <dt>
+                        <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>X</kbd>
+                      </dt>
+                      <dd>Strikethrough</dd>
+                    </div>
+                    <div className="shortcut-row">
+                      <dt>
+                        <kbd>Ctrl</kbd> + <kbd>E</kbd>
+                      </dt>
+                      <dd>Inline code</dd>
+                    </div>
+                    <div className="shortcut-row">
+                      <dt>
+                        <kbd>Ctrl</kbd> + <kbd>\</kbd>
+                      </dt>
+                      <dd>Clear formatting</dd>
+                    </div>
+                  </dl>
+                </section>
+
+                <section className="shortcuts-section">
+                  <h3>Headings</h3>
+                  <dl className="shortcuts-list">
+                    <div className="shortcut-row">
+                      <dt>
+                        <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>1</kbd>–<kbd>6</kbd>
+                      </dt>
+                      <dd>Heading 1 through 6</dd>
+                    </div>
+                  </dl>
+                </section>
+
+                <section className="shortcuts-section">
+                  <h3>Blocks &amp; lists</h3>
+                  <dl className="shortcuts-list">
+                    <div className="shortcut-row">
+                      <dt>
+                        <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>8</kbd>
+                      </dt>
+                      <dd>Bullet list</dd>
+                    </div>
+                    <div className="shortcut-row">
+                      <dt>
+                        <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>7</kbd>
+                      </dt>
+                      <dd>Numbered list</dd>
+                    </div>
+                    <div className="shortcut-row">
+                      <dt>
+                        <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Q</kbd>
+                      </dt>
+                      <dd>Blockquote</dd>
+                    </div>
+                    <div className="shortcut-row">
+                      <dt>
+                        <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>E</kbd>
+                      </dt>
+                      <dd>Code block</dd>
+                    </div>
+                  </dl>
+                </section>
+
+                <section className="shortcuts-section">
+                  <h3>Insert</h3>
+                  <dl className="shortcuts-list">
+                    <div className="shortcut-row">
+                      <dt>
+                        <kbd>Ctrl</kbd> + <kbd>K</kbd>
+                      </dt>
+                      <dd>Insert or edit link</dd>
+                    </div>
+                    <div className="shortcut-row">
+                      <dt>
+                        <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>M</kbd>
+                      </dt>
+                      <dd>Insert image</dd>
+                    </div>
+                    <div className="shortcut-row">
+                      <dt>
+                        <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd>
+                      </dt>
+                      <dd>Insert table</dd>
+                    </div>
+                    <div className="shortcut-row">
+                      <dt>
+                        <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>-</kbd>
+                      </dt>
+                      <dd>Horizontal rule</dd>
+                    </div>
+                  </dl>
+                </section>
+
+                <section className="shortcuts-section">
+                  <h3>Editing</h3>
+                  <dl className="shortcuts-list">
+                    <div className="shortcut-row">
+                      <dt>
+                        <kbd>Ctrl</kbd> + <kbd>Z</kbd>
+                      </dt>
+                      <dd>Undo</dd>
+                    </div>
+                    <div className="shortcut-row">
+                      <dt>
+                        <kbd>Ctrl</kbd> + <kbd>Y</kbd> / <kbd>Ctrl</kbd> + <kbd>Shift</kbd> +{' '}
+                        <kbd>Z</kbd>
+                      </dt>
+                      <dd>Redo</dd>
+                    </div>
+                    <div className="shortcut-row">
+                      <dt>
+                        <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>V</kbd>
+                      </dt>
+                      <dd>Paste as plain text</dd>
+                    </div>
+                  </dl>
+                </section>
+
+                <section className="shortcuts-section">
+                  <h3>Help &amp; navigation</h3>
+                  <dl className="shortcuts-list">
+                    <div className="shortcut-row">
+                      <dt>
+                        <kbd>Ctrl</kbd> + <kbd>D</kbd>
+                      </dt>
+                      <dd>Toggle this help dialog</dd>
+                    </div>
+                    <div className="shortcut-row">
+                      <dt>
+                        <kbd>Esc</kbd>
+                      </dt>
+                      <dd>Close dialog / exit editor focus</dd>
+                    </div>
+                    <div className="shortcut-row">
+                      <dt>
+                        <kbd>←</kbd> / <kbd>→</kbd>
+                      </dt>
+                      <dd>Move between toolbar buttons</dd>
+                    </div>
+                    <div className="shortcut-row">
+                      <dt>
+                        <kbd>Home</kbd> / <kbd>End</kbd>
+                      </dt>
+                      <dd>First / last toolbar button</dd>
+                    </div>
+                  </dl>
+                </section>
+              </div>
+
+              <h3>Markdown auto-formatting</h3>
+              <p>
+                Type these and they convert as you go: <kbd>#</kbd>–<kbd>######</kbd> for headings,{' '}
+                <kbd>&gt;</kbd> for a blockquote, <kbd>-</kbd> or <kbd>*</kbd> for a bullet list,{' '}
+                <kbd>1.</kbd> for a numbered list, <kbd>**bold**</kbd>, <kbd>*italic*</kbd>, and{' '}
+                <kbd>[text](url)</kbd> for links.
+              </p>
             </div>
           </div>
         </div>

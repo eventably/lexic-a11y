@@ -248,8 +248,10 @@ describe('Editor Component', () => {
     const showDocsButton = screen.getByTestId('show-docs-button');
     await user.click(showDocsButton);
 
-    expect(screen.getByText('Usage Tips')).toBeInTheDocument();
-    expect(screen.getByText(/Use the toolbar buttons or keyboard shortcuts/)).toBeInTheDocument();
+    expect(screen.getByText('Markdown auto-formatting')).toBeInTheDocument();
+    expect(screen.getByText('Strikethrough')).toBeInTheDocument();
+    expect(screen.getByText('Insert table')).toBeInTheDocument();
+    expect(screen.getByText('Toggle this help dialog')).toBeInTheDocument();
   });
 
   it('exports semantic <pre>/<code> without utility classes', () => {
