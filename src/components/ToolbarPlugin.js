@@ -20,10 +20,12 @@ import { $setBlocksType } from '@lexical/selection';
 import { INSERT_TABLE_COMMAND } from '@lexical/table';
 import {
   $createParagraphNode,
+  $createRangeSelection,
   $getSelection,
   $insertNodes,
   $isRangeSelection,
   $isTextNode,
+  $setSelection,
   CAN_REDO_COMMAND,
   CAN_UNDO_COMMAND,
   COMMAND_PRIORITY_HIGH,
@@ -72,6 +74,11 @@ export function ToolbarPlugin({ showDocs, setShowDocs, onImageUpload }) {
   const [uploadMessage, setUploadMessage] = useState('');
   const dialogRef = useRef(null);
   const urlInputRef = useRef(null);
+  // The editor selection captured when the link dialog opens. The dialog steals
+  // DOM focus and re-focusing the editor on Insert collapses the live selection,
+  // so we restore this snapshot before applying the link — otherwise a selected
+  // word gets re-inserted (e.g. "lexical" → "lexicallexical").
+  const savedLinkSelectionRef = useRef(null);
   const imageUrlInputRef = useRef(null);
   const imageFileInputRef = useRef(null);
 
@@ -313,9 +320,20 @@ export function ToolbarPlugin({ showDocs, setShowDocs, onImageUpload }) {
   // Open the link dialog, pre-filled from an existing link when the
   // cursor/selection is inside one (edit mode), or from the selected text
   const openLinkDialog = useCallback(() => {
+    savedLinkSelectionRef.current = null;
     editor.getEditorState().read(() => {
       const selection = $getSelection();
       if ($isRangeSelection(selection)) {
+        // Snapshot the live selection so Insert can restore it after the dialog
+        // closes (see savedLinkSelectionRef).
+        savedLinkSelectionRef.current = {
+          anchorKey: selection.anchor.key,
+          anchorOffset: selection.anchor.offset,
+          anchorType: selection.anchor.type,
+          focusKey: selection.focus.key,
+          focusOffset: selection.focus.offset,
+          focusType: selection.focus.type,
+        };
         const linkNode = findLinkNode(selection.anchor.getNode());
         if (linkNode) {
           // Editing an existing link: pre-fill its URL and text
@@ -1649,6 +1667,27 @@ export function ToolbarPlugin({ showDocs, setShowDocs, onImageUpload }) {
                       setTimeout(() => {
                         editor.focus();
                         editor.update(() => {
+                          // Restore the selection captured when the dialog opened;
+                          // re-focusing the editor collapses the live one.
+                          const saved = savedLinkSelectionRef.current;
+                          if (saved) {
+                            try {
+                              const restored = $createRangeSelection();
+                              restored.anchor.set(
+                                saved.anchorKey,
+                                saved.anchorOffset,
+                                saved.anchorType,
+                              );
+                              restored.focus.set(
+                                saved.focusKey,
+                                saved.focusOffset,
+                                saved.focusType,
+                              );
+                              $setSelection(restored);
+                            } catch {
+                              // Stale node keys — fall back to the live selection
+                            }
+                          }
                           const selection = $getSelection();
                           if ($isRangeSelection(selection)) {
                             const existingLink = findLinkNode(selection.anchor.getNode());
@@ -1681,6 +1720,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs, onImageUpload }) {
                             }
                           }
                         });
+                        savedLinkSelectionRef.current = null;
                         setLinkUrl('');
                         setLinkText('');
                       }, 50);
