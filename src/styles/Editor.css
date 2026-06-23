@@ -385,19 +385,36 @@ kbd {
 
 /* Convey the disabled state to sighted users too: undo/redo use aria-disabled
    (not native :disabled) so they stay focusable/announced, but without this the
-   button would still look active and clickable. */
+   button would still look active and clickable. Dim the icon rather than the
+   whole button — element opacity would also fade the box-shadow focus ring,
+   making the focus indicator a different (lighter) color than other buttons. */
 .editor-toolbar button[aria-disabled='true'] {
-  opacity: 50%;
   cursor: not-allowed;
 }
 
-.editor-toolbar button[aria-disabled='true']:hover,
-.editor-toolbar button[aria-disabled='true']:focus {
+.editor-toolbar button[aria-disabled='true'] svg {
+  opacity: 50%;
+}
+
+.editor-toolbar button[aria-disabled='true']:hover {
   background-color: var(--background);
   border-color: var(--border-color);
   color: var(--text-color);
   transform: none;
   box-shadow: none;
+}
+
+/* A disabled toolbar button (undo/redo use aria-disabled, not native disabled)
+   is still keyboard-focusable, so it must keep the same visible focus ring as
+   every other button. The previous combined hover/focus rule set
+   `box-shadow: none`, which erased the focus indicator (it is carried by
+   box-shadow, since outline is none). */
+.editor-toolbar button[aria-disabled='true']:focus {
+  background-color: var(--background);
+  border-color: var(--border-color);
+  color: var(--text-color);
+  transform: none;
+  box-shadow: 0 0 0 2px rgb(67 97 238 / 30%);
 }
 
 /* Universal active state for all toolbar buttons */
@@ -645,6 +662,28 @@ kbd {
   justify-content: flex-end;
   gap: 8px;
   margin-top: 10px;
+}
+
+@media screen and (prefers-reduced-motion: reduce) {
+  .cancel-button,
+  .insert-button {
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: none;
+  }
+}
+
+@media screen and (prefers-reduced-motion: reduce) {
+  .cancel-button,
+  .insert-button {
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: none;
+  }
 }
 
 @media screen and (prefers-reduced-motion: reduce) {
