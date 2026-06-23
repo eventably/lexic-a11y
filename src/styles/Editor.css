@@ -333,6 +333,23 @@ kbd {
   color: var(--primary-dark);
 }
 
+/* In Windows High Contrast / forced-colors mode the system overrides
+   background-color and drops box-shadow, which would hide the pressed state
+   from sighted users. A border keyed to the system Highlight color keeps the
+   selected state visible there. (Screen-reader users always get aria-pressed.) */
+@media (forced-colors: active) {
+  .editor-toolbar button.active,
+  .editor-toolbar button[aria-pressed='true'] {
+    border: 2px solid Highlight;
+    color: Highlight;
+  }
+
+  .editor-toolbar button[aria-pressed='true'] svg,
+  .editor-toolbar button.active svg {
+    color: Highlight;
+  }
+}
+
 .editor-toolbar button:focus {
   outline: none;
   box-shadow: 0 0 0 2px rgb(67 97 238 / 30%);

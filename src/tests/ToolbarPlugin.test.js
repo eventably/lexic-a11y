@@ -323,6 +323,22 @@ describe('ToolbarPlugin Component', () => {
     mockSelection.hasFormat.mockImplementation(() => false);
   });
 
+  it('reflects active formats at a collapsed caret (cursor inside formatted text)', () => {
+    // A collapsed caret with no selected text must still light up the matching
+    // toggle, so the cursor's formatting context is always visible.
+    mockSelection.isCollapsed.mockReturnValue(true);
+    mockSelection.getTextContent.mockReturnValueOnce('');
+    mockSelection.hasFormat.mockImplementation((format) => format === 'bold');
+
+    renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+
+    expect(screen.getByLabelText('Bold')).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByLabelText('Italic')).toHaveAttribute('aria-pressed', 'false');
+
+    mockSelection.hasFormat.mockImplementation(() => false);
+    mockSelection.isCollapsed.mockReturnValue(false);
+  });
+
   describe('image insertion with required alt text', () => {
     const openImageDialog = async (user) => {
       await user.click(screen.getByLabelText('Insert Image'));
