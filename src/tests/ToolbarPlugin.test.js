@@ -63,6 +63,11 @@ jest.mock('lexical', () => {
   return {
     $getSelection: jest.fn(() => mockSelection),
     $insertNodes: jest.fn(),
+    $createRangeSelection: jest.fn(() => ({
+      anchor: { set: jest.fn() },
+      focus: { set: jest.fn() },
+    })),
+    $setSelection: jest.fn(),
     $isRangeSelection: jest.fn(() => true),
     $isTextNode: jest.fn(() => true),
     $createParagraphNode: jest.fn(() => ({})),
