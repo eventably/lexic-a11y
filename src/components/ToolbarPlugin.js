@@ -39,10 +39,17 @@ import { useTranslation } from 'react-i18next';
 import { isSafeUrl, sanitizeUrl } from '../utils/sanitize-url';
 
 import { $createImageNode } from './ImageNode';
+import { useTooltip } from './Tooltip';
 
 export function ToolbarPlugin({ showDocs, setShowDocs }) {
   const [editor] = useLexicalComposerContext();
   const { t } = useTranslation();
+  // Real tooltips (not title attributes) shown on hover/focus after a short delay
+  const { getTriggerProps, tooltip } = useTooltip();
+  // Modifier label for shortcut hints in tooltips, matching the platform
+  const isMac =
+    typeof navigator !== 'undefined' && navigator.platform.toUpperCase().includes('MAC');
+  const modKey = isMac ? 'Cmd' : 'Ctrl';
   const [showLinkDialog, setShowLinkDialog] = useState(false);
   const [linkUrl, setLinkUrl] = useState('');
   const [linkText, setLinkText] = useState('');
@@ -838,6 +845,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
             if (canUndo) editor.dispatchCommand(UNDO_COMMAND, undefined);
           }}
           aria-label={t('undo')}
+          {...getTriggerProps('undo', `${t('undo')} (${modKey}+Z)`)}
           className="undo-button"
           aria-disabled={!canUndo}
         >
@@ -872,6 +880,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
             if (canRedo) editor.dispatchCommand(REDO_COMMAND, undefined);
           }}
           aria-label={t('redo')}
+          {...getTriggerProps('redo', `${t('redo')} (${modKey}+Y)`)}
           className="redo-button"
           aria-disabled={!canRedo}
         >
@@ -906,6 +915,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
         <button
           onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold')}
           aria-label={t('bold')}
+          {...getTriggerProps('bold', `${t('bold')} (${modKey}+B)`)}
           className={isBold ? 'active' : ''}
           aria-pressed={isBold}
         >
@@ -937,6 +947,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
         <button
           onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'italic')}
           aria-label={t('italic')}
+          {...getTriggerProps('italic', `${t('italic')} (${modKey}+I)`)}
           className={isItalic ? 'active' : ''}
           aria-pressed={isItalic}
         >
@@ -975,6 +986,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
         <button
           onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'underline')}
           aria-label={t('underline')}
+          {...getTriggerProps('underline', `${t('underline')} (${modKey}+U)`)}
           className={isUnderline ? 'active' : ''}
           aria-pressed={isUnderline}
         >
@@ -1006,6 +1018,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
         <button
           onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'strikethrough')}
           aria-label={t('strikethrough')}
+          {...getTriggerProps('strikethrough', t('strikethrough'))}
           className={isStrikethrough ? 'active' : ''}
           aria-pressed={isStrikethrough}
         >
@@ -1044,6 +1057,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
         <button
           onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'code')}
           aria-label={t('inlineCode')}
+          {...getTriggerProps('inlineCode', t('inlineCode'))}
           className={isInlineCode ? 'active' : ''}
           aria-pressed={isInlineCode}
         >
@@ -1075,6 +1089,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
         <button
           onClick={toggleCodeBlock}
           aria-label={t('codeBlock')}
+          {...getTriggerProps('codeBlock', t('codeBlock'))}
           className={`code-block-button ${isCodeBlockActive ? 'active' : ''}`}
           aria-pressed={isCodeBlockActive}
         >
@@ -1107,6 +1122,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
         <button
           onClick={clearFormatting}
           aria-label={t('clearFormatting')}
+          {...getTriggerProps('clearFormatting', t('clearFormatting'))}
           className="clear-formatting-button"
         >
           <svg
@@ -1140,6 +1156,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
         <button
           onClick={() => setHeading('h1')}
           aria-label={t('heading1')}
+          {...getTriggerProps('heading1', `${t('heading1')} (${modKey}+Alt+1)`)}
           className={`heading-button ${activeHeadingTag === 'h1' ? 'active' : ''}`}
           aria-pressed={activeHeadingTag === 'h1' ? true : false}
         >
@@ -1148,6 +1165,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
         <button
           onClick={() => setHeading('h2')}
           aria-label={t('heading2')}
+          {...getTriggerProps('heading2', `${t('heading2')} (${modKey}+Alt+2)`)}
           className={`heading-button ${activeHeadingTag === 'h2' ? 'active' : ''}`}
           aria-pressed={activeHeadingTag === 'h2' ? true : false}
         >
@@ -1156,6 +1174,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
         <button
           onClick={() => setHeading('h3')}
           aria-label={t('heading3')}
+          {...getTriggerProps('heading3', `${t('heading3')} (${modKey}+Alt+3)`)}
           className={`heading-button ${activeHeadingTag === 'h3' ? 'active' : ''}`}
           aria-pressed={activeHeadingTag === 'h3' ? true : false}
         >
@@ -1164,6 +1183,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
         <button
           onClick={() => setHeading('h4')}
           aria-label={t('heading4')}
+          {...getTriggerProps('heading4', `${t('heading4')} (${modKey}+Alt+4)`)}
           className={`heading-button ${activeHeadingTag === 'h4' ? 'active' : ''}`}
           aria-pressed={activeHeadingTag === 'h4' ? true : false}
         >
@@ -1172,6 +1192,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
         <button
           onClick={() => setHeading('h5')}
           aria-label={t('heading5')}
+          {...getTriggerProps('heading5', `${t('heading5')} (${modKey}+Alt+5)`)}
           className={`heading-button ${activeHeadingTag === 'h5' ? 'active' : ''}`}
           aria-pressed={activeHeadingTag === 'h5' ? true : false}
         >
@@ -1180,6 +1201,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
         <button
           onClick={() => setHeading('h6')}
           aria-label={t('heading6')}
+          {...getTriggerProps('heading6', `${t('heading6')} (${modKey}+Alt+6)`)}
           className={`heading-button ${activeHeadingTag === 'h6' ? 'active' : ''}`}
           aria-pressed={activeHeadingTag === 'h6' ? true : false}
         >
@@ -1191,6 +1213,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
         <button
           onClick={toggleQuote}
           aria-label={t('blockquote')}
+          {...getTriggerProps('blockquote', `${t('blockquote')} (${modKey}+Shift+Q)`)}
           className={`quote-button ${isQuoteActive ? 'active' : ''}`}
           aria-pressed={isQuoteActive}
         >
@@ -1219,6 +1242,10 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
           className={`link-button ${isLinkActive ? 'active' : ''}`}
           onClick={openLinkDialog}
           aria-label={isLinkActive ? t('editLink') : t('insertLink')}
+          {...getTriggerProps(
+            'link',
+            `${isLinkActive ? t('editLink') : t('insertLink')} (${modKey}+K)`,
+          )}
           aria-pressed={isLinkActive ? true : false}
         >
           <svg
@@ -1249,6 +1276,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
           className="image-button"
           onClick={() => setShowImageDialog(true)}
           aria-label={t('insertImage')}
+          {...getTriggerProps('insertImage', t('insertImage'))}
         >
           <svg
             className="icon-image"
@@ -1274,6 +1302,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
           className="table-button"
           onClick={() => setShowTableDialog(true)}
           aria-label={t('insertTable')}
+          {...getTriggerProps('insertTable', t('insertTable'))}
         >
           <svg
             className="icon-table"
@@ -1296,6 +1325,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
         <button
           onClick={() => toggleList('bullet')}
           aria-label={t('bulletList')}
+          {...getTriggerProps('bulletList', `${t('bulletList')} (${modKey}+Shift+8)`)}
           className={isUnorderedListActive ? 'active' : ''}
           aria-pressed={isUnorderedListActive ? true : false}
         >
@@ -1343,6 +1373,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
         <button
           onClick={() => toggleList('number')}
           aria-label={t('numberedList')}
+          {...getTriggerProps('numberedList', `${t('numberedList')} (${modKey}+Shift+7)`)}
           className={isOrderedListActive ? 'active' : ''}
           aria-pressed={isOrderedListActive ? true : false}
         >
@@ -1397,6 +1428,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
           type="button"
           onClick={() => editor.dispatchCommand(INSERT_HORIZONTAL_RULE_COMMAND, undefined)}
           aria-label={t('insertHorizontalRule')}
+          {...getTriggerProps('insertHorizontalRule', t('insertHorizontalRule'))}
           className="horizontal-rule-button"
         >
           <svg
@@ -1417,6 +1449,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
         <button
           onClick={() => setShowDocs((prevState) => !prevState)}
           aria-label={t('showHelp')}
+          {...getTriggerProps('showHelp', `${t('showHelp')} (${modKey}+D)`)}
           aria-pressed={showDocs}
           className={`docs-button ${showDocs ? 'active' : ''}`}
         >
@@ -1756,6 +1789,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
           </div>
         </div>
       ) : null}
+      {tooltip}
     </div>
   );
 }
