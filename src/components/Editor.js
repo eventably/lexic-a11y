@@ -58,6 +58,9 @@ const theme = {
   tableRow: 'border-t border-gray-300',
   tableCell: 'border border-gray-300 p-2',
   tableHeader: 'bg-gray-100 font-bold p-2 border border-gray-300',
+  // Applied to the table while cells are drag-selected; styled in Editor.css to
+  // suppress native text selection so the cell-range highlight reads clearly.
+  tableSelection: 'editor-table-selection',
 };
 
 const editorConfig = {
