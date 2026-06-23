@@ -46,6 +46,14 @@ i18n.use(initReactI18next).init({
         altText: 'Alt Text',
         altTextHint: 'Describe the image for screen reader users, or mark it as decorative.',
         decorativeImage: 'This image is decorative (no alt text needed)',
+        // Image upload (shown only when an upload handler is configured)
+        imageDropHint: 'Drag an image here, or',
+        chooseImageFile: 'Choose image file',
+        orPasteUrl: 'Or paste an image URL:',
+        imageUploading: 'Uploading image…',
+        imageUploadComplete: 'Image uploaded. Add alt text, then insert.',
+        imageUploadError: 'Upload failed. Try again or paste a URL instead.',
+        imageUploadInvalidType: 'That file is not an image. Choose an image file.',
         // New translations for link dialog
         insertLink: 'Insert Link',
         editLink: 'Edit Link',

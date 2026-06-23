@@ -85,14 +85,24 @@ const editorConfig = {
   ],
 };
 
-export default function Editor({ onContentChange }) {
+/**
+ * Accessible rich-text editor.
+ *
+ * @param {object} props
+ * @param {(html: string) => void} props.onContentChange Called with cleaned HTML on edit.
+ * @param {(file: File) => Promise<string>} [props.onImageUpload] Optional async
+ *   upload handler. When provided, the Insert Image dialog gains a drag-and-drop
+ *   zone and file picker; the handler receives the chosen File and must resolve
+ *   to the URL to embed. When omitted, the dialog stays URL-only.
+ */
+export default function Editor({ onContentChange, onImageUpload }) {
   const { t } = useTranslation();
   const [showDocs, setShowDocs] = useState(false);
   const [, setHtmlOutput] = useState('');
 
   return (
     <LexicalComposer initialConfig={editorConfig}>
-      <ToolbarPlugin showDocs={showDocs} setShowDocs={setShowDocs} />
+      <ToolbarPlugin showDocs={showDocs} setShowDocs={setShowDocs} onImageUpload={onImageUpload} />
 
       <div className="editor-container">
         <div className="editor-content-area">
