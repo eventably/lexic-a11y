@@ -19,13 +19,41 @@ function readFileAsDataUrl(file) {
 
 export default function App() {
   const [content, setContent] = useState('');
+  const [outputFormat, setOutputFormat] = useState('html');
 
   return (
     <I18nextProvider i18n={i18n}>
       <div>
         <h1>Lexical Rich Text Editor</h1>
-        <Editor onContentChange={setContent} onImageUpload={readFileAsDataUrl} />
-        <h2>Output HTML</h2>
+        <fieldset className="output-format-control">
+          <legend>Output format</legend>
+          <label>
+            <input
+              type="radio"
+              name="output-format"
+              value="html"
+              checked={outputFormat === 'html'}
+              onChange={(e) => setOutputFormat(e.target.value)}
+            />{' '}
+            HTML
+          </label>
+          <label>
+            <input
+              type="radio"
+              name="output-format"
+              value="markdown"
+              checked={outputFormat === 'markdown'}
+              onChange={(e) => setOutputFormat(e.target.value)}
+            />{' '}
+            Markdown
+          </label>
+        </fieldset>
+        <Editor
+          onContentChange={setContent}
+          outputFormat={outputFormat}
+          onImageUpload={readFileAsDataUrl}
+        />
+        <h2>Output ({outputFormat === 'markdown' ? 'Markdown' : 'HTML'})</h2>
         <pre>{content}</pre>
       </div>
     </I18nextProvider>

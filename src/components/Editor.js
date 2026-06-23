@@ -3,7 +3,9 @@ import { CodeHighlightNode, CodeNode } from '@lexical/code';
 import { $generateHtmlFromNodes } from '@lexical/html';
 import { LinkNode } from '@lexical/link';
 import { ListItemNode, ListNode } from '@lexical/list';
+import { $convertToMarkdownString } from '@lexical/markdown';
 import { LexicalComposer } from '@lexical/react/LexicalComposer';
+import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { ContentEditable } from '@lexical/react/LexicalContentEditable';
 import LexicalErrorBoundary from '@lexical/react/LexicalErrorBoundary';
 import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
@@ -17,7 +19,7 @@ import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
 import { TablePlugin } from '@lexical/react/LexicalTablePlugin';
 import { HeadingNode, QuoteNode } from '@lexical/rich-text';
 import { TableCellNode, TableNode, TableRowNode } from '@lexical/table';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { EDITOR_TRANSFORMERS } from '../utils/markdown-transformers';
@@ -86,16 +88,78 @@ const editorConfig = {
 };
 
 /**
+ * Serialize the current editor state to the requested format. Must be called
+ * inside an editorState.read()/editor.read() so the Lexical $ helpers have an
+ * active state.
+ *
+ * @param {import('lexical').LexicalEditor} editor
+ * @param {'html' | 'markdown'} format
+ * @returns {string}
+ */
+function serializeContent(editor, format) {
+  if (format === 'markdown') {
+    // Curated transformer set; nodes without a Markdown form (tables, images,
+    // horizontal rules, code blocks) are omitted.
+    return $convertToMarkdownString(EDITOR_TRANSFORMERS);
+  }
+
+  // Generate HTML with default export (no custom transformer), then strip the
+  // theme's utility classes and Lexical's table sizing markup.
+  return (
+    $generateHtmlFromNodes(editor)
+      .replace(/class="[^"]*"/g, '') // Remove all class attributes
+      // List longer tags before their prefixes (pre before p) so the
+      // alternation doesn't rewrite <pre> as <p>.
+      .replace(/<(h[1-6]|pre|p|ul|ol|li|code|hr)([^>]*)>/g, '<$1>') // Clean heading, paragraph, list, code, and hr tags
+      .replace(/<a([^>]*)(class="[^"]*")([^>]*)>/g, '<a$1$3>') // Clean link tags
+      .replace(/<colgroup[^>]*>[\s\S]*?<\/colgroup>/g, '') // Drop Lexical's <colgroup>/<col> sizing markup
+      .replace(/<(table|thead|tbody|tr)([^>]*)>/g, '<$1>') // Clean table structure tags
+      .replace(/(<(?:td|th)\b[^>]*?)\s+style="[^"]*"/g, '$1') // Strip inline cell styles at any attribute position
+      .replace(/(<(?:td|th)\b[^>]*?)\s+>/g, '$1>') // Tidy trailing whitespace left by attribute stripping
+      // Header cells are all column headers (header row only), so scope="col".
+      // The (?![a-z]) guard keeps this from matching <thead>.
+      .replace(/<th(?![a-z])(?![^>]*\bscope=)([^>]*)>/g, '<th scope="col"$1>')
+  ); // Ensure header cells carry scope
+}
+
+/**
+ * Re-serialize and emit the current content when the output format changes, so
+ * consumers see the new format immediately instead of only after the next edit.
+ */
+function OutputFormatSync({ outputFormat, onContentChange }) {
+  const [editor] = useLexicalComposerContext();
+  const isInitialRun = useRef(true);
+  useEffect(() => {
+    // Skip the mount run — OnChangePlugin already emits the initial content.
+    // Only re-emit when the format actually changes afterward.
+    if (isInitialRun.current) {
+      isInitialRun.current = false;
+      return;
+    }
+    editor.getEditorState().read(() => {
+      onContentChange(serializeContent(editor, outputFormat));
+    });
+  }, [editor, outputFormat, onContentChange]);
+  return null;
+}
+
+/**
  * Accessible rich-text editor.
  *
  * @param {object} props
- * @param {(html: string) => void} props.onContentChange Called with cleaned HTML on edit.
+ * @param {(content: string) => void} props.onContentChange Called on edit with the
+ *   serialized content, in the format selected by `outputFormat`.
+ * @param {'html' | 'markdown'} [props.outputFormat] Format passed to
+ *   `onContentChange`: cleaned HTML (default) or Markdown. Markdown covers
+ *   headings, lists, blockquotes, links, and bold/italic/strikethrough; nodes
+ *   without a Markdown representation (tables, images, horizontal rules, code
+ *   blocks) are omitted from Markdown output.
  * @param {(file: File) => Promise<string>} [props.onImageUpload] Optional async
  *   upload handler. When provided, the Insert Image dialog gains a drag-and-drop
  *   zone and file picker; the handler receives the chosen File and must resolve
  *   to the URL to embed. When omitted, the dialog stays URL-only.
  */
-export default function Editor({ onContentChange, onImageUpload }) {
+export default function Editor({ onContentChange, outputFormat = 'html', onImageUpload }) {
   const { t } = useTranslation();
   const [showDocs, setShowDocs] = useState(false);
   const [, setHtmlOutput] = useState('');
@@ -123,29 +187,13 @@ export default function Editor({ onContentChange, onImageUpload }) {
           <OnChangePlugin
             onChange={(editorState, editor) => {
               editorState.read(() => {
-                // Generate HTML with default export (no custom transformer)
-                const htmlString = $generateHtmlFromNodes(editor);
-
-                // Use a simple regex to clean up the utility classes
-                const cleanHtml = htmlString
-                  .replace(/class="[^"]*"/g, '') // Remove all class attributes
-                  // List longer tags before their prefixes (pre before p) so the
-                  // alternation doesn't rewrite <pre> as <p>.
-                  .replace(/<(h[1-6]|pre|p|ul|ol|li|code|hr)([^>]*)>/g, '<$1>') // Clean heading, paragraph, list, code, and hr tags
-                  .replace(/<a([^>]*)(class="[^"]*")([^>]*)>/g, '<a$1$3>') // Clean link tags
-                  .replace(/<colgroup[^>]*>[\s\S]*?<\/colgroup>/g, '') // Drop Lexical's <colgroup>/<col> sizing markup
-                  .replace(/<(table|thead|tbody|tr)([^>]*)>/g, '<$1>') // Clean table structure tags
-                  .replace(/(<(?:td|th)\b[^>]*?)\s+style="[^"]*"/g, '$1') // Strip inline cell styles at any attribute position
-                  .replace(/(<(?:td|th)\b[^>]*?)\s+>/g, '$1>') // Tidy trailing whitespace left by attribute stripping
-                  // Header cells are all column headers (header row only), so scope="col".
-                  // The (?![a-z]) guard keeps this from matching <thead>.
-                  .replace(/<th(?![a-z])(?![^>]*\bscope=)([^>]*)>/g, '<th scope="col"$1>'); // Ensure header cells carry scope
-
-                setHtmlOutput(cleanHtml);
-                onContentChange(cleanHtml);
+                const serialized = serializeContent(editor, outputFormat);
+                setHtmlOutput(serialized);
+                onContentChange(serialized);
               });
             }}
           />
+          <OutputFormatSync outputFormat={outputFormat} onContentChange={onContentChange} />
         </div>
         <HeadingOutlinePlugin />
         <WordCountPlugin />
