@@ -1,33 +1,36 @@
 // Editor.js
-import React, { useState, useRef, useCallback } from 'react';
-import { LexicalComposer } from '@lexical/react/LexicalComposer';
-import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
-import { ContentEditable } from '@lexical/react/LexicalContentEditable';
-import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
-import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
-import LexicalErrorBoundary from '@lexical/react/LexicalErrorBoundary';
-import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
+import { CodeHighlightNode, CodeNode } from '@lexical/code';
 import { $generateHtmlFromNodes } from '@lexical/html';
-import { ToolbarPlugin } from './ToolbarPlugin';
-import { Shortcuts } from './Shortcuts';
-import { HeadingNode } from '@lexical/rich-text';
-import { ListNode, ListItemNode } from '@lexical/list';
-import { QuoteNode } from '@lexical/rich-text';
 import { LinkNode } from '@lexical/link';
+import { ListItemNode, ListNode } from '@lexical/list';
+import { $convertToMarkdownString } from '@lexical/markdown';
+import { LexicalComposer } from '@lexical/react/LexicalComposer';
+import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
+import { ContentEditable } from '@lexical/react/LexicalContentEditable';
+import LexicalErrorBoundary from '@lexical/react/LexicalErrorBoundary';
+import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
+import { HorizontalRuleNode } from '@lexical/react/LexicalHorizontalRuleNode';
+import { HorizontalRulePlugin } from '@lexical/react/LexicalHorizontalRulePlugin';
 import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin';
 import { ListPlugin } from '@lexical/react/LexicalListPlugin';
+import { MarkdownShortcutPlugin } from '@lexical/react/LexicalMarkdownShortcutPlugin';
+import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
+import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
+import { TablePlugin } from '@lexical/react/LexicalTablePlugin';
+import { HeadingNode, QuoteNode } from '@lexical/rich-text';
+import { TableCellNode, TableNode, TableRowNode } from '@lexical/table';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-// Counter-based ID generator (React 16.8+ compatible alternative to useId)
-let editorIdCounter = 0;
-function useEditorId() {
-  const idRef = React.useRef(null);
-  if (idRef.current === null) {
-    editorIdCounter += 1;
-    idRef.current = `lexic-editor-${editorIdCounter}`;
-  }
-  return idRef.current;
-}
+import { EDITOR_TRANSFORMERS } from '../utils/markdown-transformers';
+import { isSafeUrl } from '../utils/sanitize-url';
+
+import { HeadingOutlinePlugin } from './HeadingOutlinePlugin';
+import { ImageNode } from './ImageNode';
+import { PastePlugin } from './PastePlugin';
+import { ToolbarPlugin } from './ToolbarPlugin';
+import { WordCountPlugin } from './WordCountPlugin';
+// Temporarily comment out missing imports
 
 const theme = {
   text: {
@@ -36,7 +39,9 @@ const theme = {
     underline: 'underline',
     strikethrough: 'line-through',
     underlineStrikethrough: 'underline line-through',
+    code: 'editor-text-code',
   },
+  code: 'editor-code-block',
   heading: {
     h1: 'text-3xl font-bold mt-6 mb-4',
     h2: 'text-2xl font-bold mt-5 mb-3',
@@ -55,6 +60,9 @@ const theme = {
   tableRow: 'border-t border-gray-300',
   tableCell: 'border border-gray-300 p-2',
   tableHeader: 'bg-gray-100 font-bold p-2 border border-gray-300',
+  // Applied to the table while cells are drag-selected; styled in Editor.css to
+  // suppress native text selection so the cell-range highlight reads clearly.
+  tableSelection: 'editor-table-selection',
 };
 
 const editorConfig = {
@@ -69,213 +77,327 @@ const editorConfig = {
     ListItemNode,
     QuoteNode,
     LinkNode,
+    CodeNode,
+    CodeHighlightNode,
+    HorizontalRuleNode,
+    ImageNode,
+    TableNode,
+    TableRowNode,
+    TableCellNode,
   ],
 };
 
-// Inner component that has access to the Lexical composer context
-function EditorContent({ editorId, label, required, t }) {
-  const [editor] = useLexicalComposerContext();
-
-  const handleContentKeyDown = useCallback((e) => {
-    // Shift+Tab from editor content area moves focus to the help button in toolbar
-    if (e.key === 'Tab' && e.shiftKey) {
-      e.preventDefault();
-      const editorBox = e.target.closest('.editor-box');
-      if (editorBox) {
-        const helpButton = editorBox.querySelector('.docs-button');
-        if (helpButton) {
-          helpButton.focus();
-        }
-      }
-    }
-  }, []);
-
-  const handleContentClick = useCallback(() => {
-    editor.focus();
-  }, [editor]);
-
-  const ariaLabel = [
-    label,
-    t('editorTitle'),
-    required ? t('required') : '',
-  ].filter(Boolean).join(' - ');
-
-  return (
-    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
-    <div className="editor-content-area" onClick={handleContentClick}>
-      <RichTextPlugin
-        contentEditable={
-          <ContentEditable
-            id={editorId}
-            className="editor-input"
-            aria-label={ariaLabel}
-            aria-multiline="true"
-            aria-required={required ? 'true' : undefined}
-            tabIndex={-1}
-            onKeyDown={handleContentKeyDown}
-          />
-        }
-        placeholder={<div className="editor-placeholder">Start writing...</div>}
-        ErrorBoundary={LexicalErrorBoundary}
-      />
-    </div>
-  );
-}
-
-
-export default function Editor({ onContentChange, label, required, error, errorMessage }) {
-  const [showDocs, setShowDocs] = useState(false);
-  const [, setHtmlOutput] = useState('');
-  const docsButtonRef = useRef(null);
-  const editorId = useEditorId();
-  const { t } = useTranslation();
-
-  const descriptionId = `${editorId}-description`;
-  const errorId = `${editorId}-error`;
-
-  // Build aria-label for the editor group
-  const groupAriaLabel = [
-    label,
-    t('editorTitle'),
-    required ? `(${t('required')})` : '',
-  ].filter(Boolean).join(' ');
-
-  // Build aria-describedby
-  const describedByParts = [descriptionId];
-  if (error && errorMessage) {
-    describedByParts.push(errorId);
+/**
+ * Serialize the current editor state to the requested format. Must be called
+ * inside an editorState.read()/editor.read() so the Lexical $ helpers have an
+ * active state.
+ *
+ * @param {import('lexical').LexicalEditor} editor
+ * @param {'html' | 'markdown'} format
+ * @returns {string}
+ */
+function serializeContent(editor, format) {
+  if (format === 'markdown') {
+    // Curated transformer set; nodes without a Markdown form (tables, images,
+    // horizontal rules, code blocks) are omitted.
+    return $convertToMarkdownString(EDITOR_TRANSFORMERS);
   }
 
-  const handleEditorBoxKeyDown = useCallback((e) => {
-    // Enter or Space on the editor-box itself (not on child elements) focuses the content editable
-    if ((e.key === 'Enter' || e.key === ' ') && e.target.classList.contains('editor-box')) {
-      e.preventDefault();
-      const contentEditable = e.target.querySelector('.editor-input');
-      if (contentEditable) {
-        contentEditable.focus();
-      }
-    }
-  }, []);
+  // Generate HTML with default export (no custom transformer), then strip the
+  // theme's utility classes and Lexical's table sizing markup.
+  return (
+    $generateHtmlFromNodes(editor)
+      .replace(/class="[^"]*"/g, '') // Remove all class attributes
+      // List longer tags before their prefixes (pre before p) so the
+      // alternation doesn't rewrite <pre> as <p>.
+      .replace(/<(h[1-6]|pre|p|ul|ol|li|code|hr)([^>]*)>/g, '<$1>') // Clean heading, paragraph, list, code, and hr tags
+      .replace(/<a([^>]*)(class="[^"]*")([^>]*)>/g, '<a$1$3>') // Clean link tags
+      .replace(/<colgroup[^>]*>[\s\S]*?<\/colgroup>/g, '') // Drop Lexical's <colgroup>/<col> sizing markup
+      .replace(/<(table|thead|tbody|tr)([^>]*)>/g, '<$1>') // Clean table structure tags
+      .replace(/(<(?:td|th)\b[^>]*?)\s+style="[^"]*"/g, '$1') // Strip inline cell styles at any attribute position
+      .replace(/(<(?:td|th)\b[^>]*?)\s+>/g, '$1>') // Tidy trailing whitespace left by attribute stripping
+      // Header cells are all column headers (header row only), so scope="col".
+      // The (?![a-z]) guard keeps this from matching <thead>.
+      .replace(/<th(?![a-z])(?![^>]*\bscope=)([^>]*)>/g, '<th scope="col"$1>')
+  ); // Ensure header cells carry scope
+}
 
-  const handleLabelClick = useCallback(() => {
-    const contentEditable = document.getElementById(editorId);
-    if (contentEditable) {
-      contentEditable.focus();
+/**
+ * Re-serialize and emit the current content when the output format changes, so
+ * consumers see the new format immediately instead of only after the next edit.
+ */
+function OutputFormatSync({ outputFormat, onContentChange }) {
+  const [editor] = useLexicalComposerContext();
+  const isInitialRun = useRef(true);
+  useEffect(() => {
+    // Skip the mount run — OnChangePlugin already emits the initial content.
+    // Only re-emit when the format actually changes afterward.
+    if (isInitialRun.current) {
+      isInitialRun.current = false;
+      return;
     }
-  }, [editorId]);
+    editor.getEditorState().read(() => {
+      onContentChange(serializeContent(editor, outputFormat));
+    });
+  }, [editor, outputFormat, onContentChange]);
+  return null;
+}
 
-  const handleDocsOverlayClick = useCallback((e) => {
-    // Only close when clicking the overlay background, not child elements
-    if (e.target === e.currentTarget) {
-      setShowDocs(false);
-    }
-  }, []);
+/**
+ * Accessible rich-text editor.
+ *
+ * @param {object} props
+ * @param {(content: string) => void} props.onContentChange Called on edit with the
+ *   serialized content, in the format selected by `outputFormat`.
+ * @param {'html' | 'markdown'} [props.outputFormat] Format passed to
+ *   `onContentChange`: cleaned HTML (default) or Markdown. Markdown covers
+ *   headings, lists, blockquotes, links, and bold/italic/strikethrough; nodes
+ *   without a Markdown representation (tables, images, horizontal rules, code
+ *   blocks) are omitted from Markdown output.
+ * @param {(file: File) => Promise<string>} [props.onImageUpload] Optional async
+ *   upload handler. When provided, the Insert Image dialog gains a drag-and-drop
+ *   zone and file picker; the handler receives the chosen File and must resolve
+ *   to the URL to embed. When omitted, the dialog stays URL-only.
+ */
+export default function Editor({ onContentChange, outputFormat = 'html', onImageUpload }) {
+  const { t } = useTranslation();
+  const [showDocs, setShowDocs] = useState(false);
+  const [, setHtmlOutput] = useState('');
 
   return (
-    <div>
-      {label && (
-        <div className="editor-label-container">
-          <span
-            className={`editor-label ${error ? 'editor-label-error' : ''}`}
-            role="button"
-            tabIndex={0}
-            onClick={handleLabelClick}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleLabelClick(); } }}
-            data-editor-for={editorId}
-          >
-            {label}
-          </span>
-          {required && (
-            <span className="editor-required-indicator" aria-hidden="true">*</span>
-          )}
-        </div>
-      )}
+    <LexicalComposer initialConfig={editorConfig}>
+      <ToolbarPlugin showDocs={showDocs} setShowDocs={setShowDocs} onImageUpload={onImageUpload} />
 
-      <LexicalComposer initialConfig={editorConfig}>
-        {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
-        <div
-          className={`editor-box ${error ? 'editor-box-error' : ''}`}
-          role="group"
-          aria-label={groupAriaLabel}
-          aria-describedby={describedByParts.join(' ')}
-          onKeyDown={handleEditorBoxKeyDown}
-        >
-          <span id={descriptionId} className="sr-only">
-            {t('editorDescription')}
-          </span>
-
-          <ToolbarPlugin
-            showDocs={showDocs}
-            setShowDocs={setShowDocs}
-            docsButtonRef={docsButtonRef}
+      <div className="editor-container">
+        <div className="editor-content-area">
+          <RichTextPlugin
+            contentEditable={
+              <ContentEditable className="editor-input" ariaLabel={t('editorContent')} />
+            }
+            placeholder={<div className="editor-placeholder">Start writing...</div>}
+            ErrorBoundary={LexicalErrorBoundary}
           />
-
-          <div className="editor-container">
-            <EditorContent
-              editorId={editorId}
-              label={label}
-              required={required}
-              t={t}
-            />
-            <HistoryPlugin />
-            <LinkPlugin />
-            <ListPlugin />
-            <OnChangePlugin
-              onChange={(editorState, editor) => {
-                editorState.read(() => {
-                  const htmlString = $generateHtmlFromNodes(editor);
-                  const cleanHtml = htmlString
-                    .replace(/class="[^"]*"/g, '')
-                    .replace(/<(h[1-6]|p|ul|ol|li)([^>]*)>/g, '<$1>')
-                    .replace(/<a([^>]*)(class="[^"]*")([^>]*)>/g, '<a$1$3>');
-                  setHtmlOutput(cleanHtml);
-                  onContentChange(cleanHtml);
-                });
-              }}
-            />
-          </div>
+          <HistoryPlugin />
+          <HorizontalRulePlugin />
+          <LinkPlugin validateUrl={isSafeUrl} />
+          <ListPlugin />
+          <MarkdownShortcutPlugin transformers={EDITOR_TRANSFORMERS} />
+          <PastePlugin />
+          <TablePlugin />
+          <OnChangePlugin
+            onChange={(editorState, editor) => {
+              editorState.read(() => {
+                const serialized = serializeContent(editor, outputFormat);
+                setHtmlOutput(serialized);
+                onContentChange(serialized);
+              });
+            }}
+          />
+          <OutputFormatSync outputFormat={outputFormat} onContentChange={onContentChange} />
         </div>
+        <HeadingOutlinePlugin />
+        <WordCountPlugin />
+      </div>
 
-        {showDocs && (
-          // eslint-disable-next-line jsx-a11y/no-static-element-interactions, jsx-a11y/click-events-have-key-events
-          <div
-            className="editor-docs-overlay"
-            onClick={handleDocsOverlayClick}
-          >
-            {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
-            <div
-              className="editor-docs-content"
-              role="dialog"
-              aria-modal="true"
-              aria-label={t('editorShortcutsTitle')}
-              onKeyDown={(e) => { if (e.key === 'Escape') setShowDocs(false); }}
-            >
-              <div className="editor-docs-header">
-                <h2>{t('editorShortcutsTitle')}</h2>
-                <button
-                  type="button"
-                  onClick={() => setShowDocs(false)}
-                  aria-label="Close documentation"
-                  className="close-docs-button"
-                >
-                  &times;
-                </button>
+      {showDocs ? (
+        <div className="editor-docs-overlay" aria-label="Editor documentation">
+          <div className="editor-docs-content">
+            <div className="editor-docs-header">
+              <h2>Editor Shortcuts</h2>
+              <button
+                onClick={() => setShowDocs(false)}
+                aria-label="Close documentation"
+                className="close-docs-button"
+              >
+                &times;
+              </button>
+            </div>
+            <div className="editor-docs-body">
+              <p className="editor-docs-platform-note">
+                On macOS, use <kbd>Cmd</kbd> (⌘) wherever <kbd>Ctrl</kbd> is shown.
+              </p>
+              <div className="shortcuts-sections">
+                <section className="shortcuts-section">
+                  <h3>Text formatting</h3>
+                  <dl className="shortcuts-list">
+                    <div className="shortcut-row">
+                      <dt>
+                        <kbd>Ctrl</kbd> + <kbd>B</kbd>
+                      </dt>
+                      <dd>Bold</dd>
+                    </div>
+                    <div className="shortcut-row">
+                      <dt>
+                        <kbd>Ctrl</kbd> + <kbd>I</kbd>
+                      </dt>
+                      <dd>Italic</dd>
+                    </div>
+                    <div className="shortcut-row">
+                      <dt>
+                        <kbd>Ctrl</kbd> + <kbd>U</kbd>
+                      </dt>
+                      <dd>Underline</dd>
+                    </div>
+                    <div className="shortcut-row">
+                      <dt>
+                        <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>X</kbd>
+                      </dt>
+                      <dd>Strikethrough</dd>
+                    </div>
+                    <div className="shortcut-row">
+                      <dt>
+                        <kbd>Ctrl</kbd> + <kbd>E</kbd>
+                      </dt>
+                      <dd>Inline code</dd>
+                    </div>
+                    <div className="shortcut-row">
+                      <dt>
+                        <kbd>Ctrl</kbd> + <kbd>\</kbd>
+                      </dt>
+                      <dd>Clear formatting</dd>
+                    </div>
+                  </dl>
+                </section>
+
+                <section className="shortcuts-section">
+                  <h3>Headings</h3>
+                  <dl className="shortcuts-list">
+                    <div className="shortcut-row">
+                      <dt>
+                        <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>1</kbd>–<kbd>6</kbd>
+                      </dt>
+                      <dd>Heading 1 through 6</dd>
+                    </div>
+                  </dl>
+                </section>
+
+                <section className="shortcuts-section">
+                  <h3>Blocks &amp; lists</h3>
+                  <dl className="shortcuts-list">
+                    <div className="shortcut-row">
+                      <dt>
+                        <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>8</kbd>
+                      </dt>
+                      <dd>Bullet list</dd>
+                    </div>
+                    <div className="shortcut-row">
+                      <dt>
+                        <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>7</kbd>
+                      </dt>
+                      <dd>Numbered list</dd>
+                    </div>
+                    <div className="shortcut-row">
+                      <dt>
+                        <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Q</kbd>
+                      </dt>
+                      <dd>Blockquote</dd>
+                    </div>
+                    <div className="shortcut-row">
+                      <dt>
+                        <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>E</kbd>
+                      </dt>
+                      <dd>Code block</dd>
+                    </div>
+                  </dl>
+                </section>
+
+                <section className="shortcuts-section">
+                  <h3>Insert</h3>
+                  <dl className="shortcuts-list">
+                    <div className="shortcut-row">
+                      <dt>
+                        <kbd>Ctrl</kbd> + <kbd>K</kbd>
+                      </dt>
+                      <dd>Insert or edit link</dd>
+                    </div>
+                    <div className="shortcut-row">
+                      <dt>
+                        <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>M</kbd>
+                      </dt>
+                      <dd>Insert image</dd>
+                    </div>
+                    <div className="shortcut-row">
+                      <dt>
+                        <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd>
+                      </dt>
+                      <dd>Insert table</dd>
+                    </div>
+                    <div className="shortcut-row">
+                      <dt>
+                        <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>-</kbd>
+                      </dt>
+                      <dd>Horizontal rule</dd>
+                    </div>
+                  </dl>
+                </section>
+
+                <section className="shortcuts-section">
+                  <h3>Editing</h3>
+                  <dl className="shortcuts-list">
+                    <div className="shortcut-row">
+                      <dt>
+                        <kbd>Ctrl</kbd> + <kbd>Z</kbd>
+                      </dt>
+                      <dd>Undo</dd>
+                    </div>
+                    <div className="shortcut-row">
+                      <dt>
+                        <kbd>Ctrl</kbd> + <kbd>Y</kbd> / <kbd>Ctrl</kbd> + <kbd>Shift</kbd> +{' '}
+                        <kbd>Z</kbd>
+                      </dt>
+                      <dd>Redo</dd>
+                    </div>
+                    <div className="shortcut-row">
+                      <dt>
+                        <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>V</kbd>
+                      </dt>
+                      <dd>Paste as plain text</dd>
+                    </div>
+                  </dl>
+                </section>
+
+                <section className="shortcuts-section">
+                  <h3>Help &amp; navigation</h3>
+                  <dl className="shortcuts-list">
+                    <div className="shortcut-row">
+                      <dt>
+                        <kbd>Ctrl</kbd> + <kbd>D</kbd>
+                      </dt>
+                      <dd>Toggle this help dialog</dd>
+                    </div>
+                    <div className="shortcut-row">
+                      <dt>
+                        <kbd>Esc</kbd>
+                      </dt>
+                      <dd>Close dialog / exit editor focus</dd>
+                    </div>
+                    <div className="shortcut-row">
+                      <dt>
+                        <kbd>←</kbd> / <kbd>→</kbd>
+                      </dt>
+                      <dd>Move between toolbar buttons</dd>
+                    </div>
+                    <div className="shortcut-row">
+                      <dt>
+                        <kbd>Home</kbd> / <kbd>End</kbd>
+                      </dt>
+                      <dd>First / last toolbar button</dd>
+                    </div>
+                  </dl>
+                </section>
               </div>
-              <div className="editor-docs-body">
-                <Shortcuts />
-                <h3>{t('usageTips')}</h3>
-                <p>{t('usageTipsDescription')}</p>
-              </div>
+
+              <h3>Markdown auto-formatting</h3>
+              <p>
+                Type these and they convert as you go: <kbd>#</kbd>–<kbd>######</kbd> for headings,{' '}
+                <kbd>&gt;</kbd> for a blockquote, <kbd>-</kbd> or <kbd>*</kbd> for a bullet list,{' '}
+                <kbd>1.</kbd> for a numbered list, <kbd>**bold**</kbd>, <kbd>*italic*</kbd>, and{' '}
+                <kbd>[text](url)</kbd> for links.
+              </p>
             </div>
           </div>
-        )}
-      </LexicalComposer>
-
-      {error && errorMessage && (
-        <div id={errorId} className="editor-error-message" role="alert">
-          {errorMessage}
         </div>
-      )}
-    </div>
+      ) : null}
+    </LexicalComposer>
   );
 }

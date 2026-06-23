@@ -1,7 +1,8 @@
 // App.js
-import React, { useState } from 'react';
-import Editor from './Editor';
+import { useState } from 'react';
 import { I18nextProvider } from 'react-i18next';
+
+import Editor from './Editor';
 import i18n from './i18n';
 
 export default function App() {

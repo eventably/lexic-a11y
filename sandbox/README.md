@@ -1,6 +1,7 @@
 # Lexical A11y Editor Demo
 
-This sandbox demonstrates the use of lexic-a11y, an accessible rich text editor built with React and Lexical.
+This sandbox demonstrates the use of lexic-a11y, an accessible rich text editor
+built with React and Lexical.
 
 ## Features Showcased
 
@@ -27,6 +28,8 @@ The editor is ready to use! You can:
 
 ## About lexic-a11y
 
-This is a standalone demo of the lexic-a11y package, which provides an accessible, internationalized rich text editor built with React and Lexical.
+This is a standalone demo of the lexic-a11y package, which provides an
+accessible, internationalized rich text editor built with React and Lexical.
 
-For more information, visit the [full repository](https://github.com/eventably/lexic-a11y).
+For more information, visit the
+[full repository](https://github.com/eventably/lexic-a11y).

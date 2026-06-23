@@ -1,0 +1,40 @@
+{
+  "extends": ["stylelint-config-standard"],
+  "plugins": ["@double-great/stylelint-a11y", "stylelint-declaration-strict-value"],
+  "rules": {
+    "a11y/content-property-no-static-value": [true, { "severity": "warning" }],
+    "a11y/font-size-is-readable": [true, { "severity": "warning" }],
+    "a11y/line-height-is-vertical-rhythmed": null,
+    "a11y/media-prefers-reduced-motion": [true, { "severity": "warning" }],
+    "a11y/no-display-none": [true, { "severity": "warning" }],
+    "a11y/no-obsolete-attribute": true,
+    "a11y/no-obsolete-element": true,
+    "a11y/no-outline-none": true,
+    "a11y/no-text-align-justify": true,
+    "a11y/selector-pseudo-class-focus": [true, { "severity": "warning" }],
+
+    "no-empty-source": null,
+    "selector-class-pattern": null,
+    "custom-property-pattern": null,
+    "keyframes-name-pattern": null,
+    "no-descending-specificity": null,
+
+    "color-no-invalid-hex": true,
+    "color-function-notation": "modern",
+    "alpha-value-notation": "percentage",
+
+    "declaration-block-no-redundant-longhand-properties": true,
+    "shorthand-property-no-redundant-values": true,
+
+    "no-duplicate-selectors": true,
+    "selector-max-id": 0,
+
+    "length-zero-no-unit": true,
+
+    "media-feature-name-no-unknown": true,
+    "media-feature-range-notation": "context",
+
+    "at-rule-no-unknown": [true, { "ignoreAtRules": ["tailwind", "apply", "layer", "screen", "variants", "responsive"] }]
+  },
+  "ignoreFiles": ["node_modules/**", "dist/**", "build/**", "coverage/**", "**/*.min.css"]
+}

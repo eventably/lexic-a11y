@@ -1,17 +1,14 @@
-import React from 'react';
+import { INSERT_ORDERED_LIST_COMMAND, INSERT_UNORDERED_LIST_COMMAND } from '@lexical/list';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
-import { useTranslation } from 'react-i18next';
+import { $createHeadingNode } from '@lexical/rich-text';
+import { $setBlocksType } from '@lexical/selection';
 import {
+  $createParagraphNode,
   $getSelection,
   $isRangeSelection,
   FORMAT_TEXT_COMMAND,
-  COMMAND_PRIORITY_NORMAL,
-  $createParagraphNode,
-  $getRoot,
 } from 'lexical';
-import { INSERT_ORDERED_LIST_COMMAND, INSERT_UNORDERED_LIST_COMMAND } from '@lexical/list';
-import { $createHeadingNode, $isHeadingNode } from '@lexical/rich-text';
-import { $setBlocksType } from '@lexical/selection';
+import { useTranslation } from 'react-i18next';
 
 export default function ToolbarPlugin() {
   const [editor] = useLexicalComposerContext();
@@ -75,22 +72,34 @@ export default function ToolbarPlugin() {
           <s>S</s>
         </button>
       </div>
-      
+
       <div className="toolbar-group">
-        <button onClick={() => formatHeading(1)} className="heading-button" aria-label={t('heading1')}>
+        <button
+          onClick={() => formatHeading(1)}
+          className="heading-button"
+          aria-label={t('heading1')}
+        >
           {t('heading1')}
         </button>
-        <button onClick={() => formatHeading(2)} className="heading-button" aria-label={t('heading2')}>
+        <button
+          onClick={() => formatHeading(2)}
+          className="heading-button"
+          aria-label={t('heading2')}
+        >
           {t('heading2')}
         </button>
-        <button onClick={() => formatHeading(3)} className="heading-button" aria-label={t('heading3')}>
+        <button
+          onClick={() => formatHeading(3)}
+          className="heading-button"
+          aria-label={t('heading3')}
+        >
           {t('heading3')}
         </button>
         <button onClick={formatParagraph} className="heading-button" aria-label="Paragraph">
           P
         </button>
       </div>
-      
+
       <div className="toolbar-group">
         <button onClick={insertOrderedList} aria-label={t('orderedList')}>
           1.

@@ -1,20 +1,20 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { I18nextProvider } from 'react-i18next';
 import i18n from './i18n';
 
 // Import the editor directly from source
-import { LexicalComposer } from '@lexical/react/LexicalComposer';
-import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
-import { ContentEditable } from '@lexical/react/LexicalContentEditable';
-import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
-import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
-import LexicalErrorBoundary from '@lexical/react/LexicalErrorBoundary';
 import { $generateHtmlFromNodes } from '@lexical/html';
-import { HeadingNode } from '@lexical/rich-text';
-import { ListNode, ListItemNode } from '@lexical/list';
 import { LinkNode } from '@lexical/link';
+import { ListItemNode, ListNode } from '@lexical/list';
+import { LexicalComposer } from '@lexical/react/LexicalComposer';
+import { ContentEditable } from '@lexical/react/LexicalContentEditable';
+import LexicalErrorBoundary from '@lexical/react/LexicalErrorBoundary';
+import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
 import { LinkPlugin } from '@lexical/react/LexicalLinkPlugin';
 import { ListPlugin } from '@lexical/react/LexicalListPlugin';
+import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
+import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
+import { HeadingNode } from '@lexical/rich-text';
 
 // Import the simplified toolbar component created for this sandbox
 import ToolbarPlugin from './ToolbarPlugin';
@@ -49,12 +49,7 @@ const editorConfig = {
   namespace: 'LexicA11yDemo',
   theme,
   onError: (error) => console.error(error),
-  nodes: [
-    HeadingNode,
-    ListNode,
-    ListItemNode,
-    LinkNode,
-  ],
+  nodes: [HeadingNode, ListNode, ListItemNode, LinkNode],
 };
 
 // Main App Component
@@ -73,8 +68,8 @@ export default function App() {
       <div className="container">
         <h1>Lexical Accessible Editor Demo</h1>
         <p>
-          A fully featured, accessible, and internationalized rich text editor 
-          built with React and Lexical.
+          A fully featured, accessible, and internationalized rich text editor built with React and
+          Lexical.
         </p>
 
         <div className="editor-container">

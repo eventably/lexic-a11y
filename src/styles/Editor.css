@@ -1,101 +1,43 @@
 /* Editor.css */
+
 /* Basic editor styles including Lexical theme classes */
 :root {
-  --primary-color: #805394;
-  --primary-light: #f3e8f9;
-  --primary-dark: #482856;
+  --primary-color: #4361ee;
+  --primary-light: #e8efff;
+  --primary-dark: #2947c3;
   --secondary-color: #4cc9f0;
   --text-color: #333;
   --text-light: #757575;
-  --background: #ffffff;
-  --border-color: #5f5d5d;
-  --focus-color: #805394;
-  --error-color: #d32f2f;
+  --background: #fff;
+  --border-color: #e0e0e0;
+  --focus-color: #4361ee;
+  --error-color: #ef476f;
   --success-color: #06d6a0;
-  --dark-blue: #482856;
   --transition: all 0.2s ease-in-out;
-  --box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
-}
-
-/* Screen reader only utility */
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border-width: 0;
-}
-
-/* Editor box wrapper */
-.editor-box {
-  border: 2px solid var(--border-color);
-  border-radius: 4px;
-  background-color: var(--background);
-  transition: border-color 0.2s ease-in-out;
-}
-
-.editor-box:hover {
-  border-color: var(--primary-color);
-}
-
-.editor-box:focus-within {
-  border-color: var(--primary-color);
-  outline: 3px solid var(--focus-color);
-  outline-offset: 2px;
-}
-
-.editor-box-error {
-  border-color: var(--error-color);
-}
-
-.editor-box-error:hover {
-  border-color: var(--error-color);
-}
-
-.editor-box-error:focus-within {
-  border-color: var(--error-color);
-  outline-color: var(--error-color);
-}
-
-/* Label styles */
-.editor-label-container {
-  display: flex;
-  align-items: baseline;
-  gap: 4px;
-  margin-bottom: 6px;
-}
-
-.editor-label {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-color);
-  cursor: pointer;
-}
-
-.editor-label-error {
-  color: var(--error-color);
-}
-
-.editor-required-indicator {
-  color: var(--error-color);
-  font-weight: 600;
-}
-
-/* Error message */
-.editor-error-message {
-  color: var(--error-color);
-  font-size: 12px;
-  margin-top: 4px;
-  font-weight: 500;
+  --box-shadow: 0 2px 5px rgb(0 0 0 / 8%);
 }
 
 .editor-container {
+  border: 1px solid var(--border-color);
   padding: 16px;
+  box-shadow: var(--box-shadow);
   background-color: var(--background);
+}
+
+/* Demo output-format selector */
+.output-format-control {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin: 0 0 1rem;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+}
+
+.output-format-control legend {
+  font-weight: 600;
+  padding: 0 4px;
 }
 
 .editor-content-area {
@@ -103,7 +45,7 @@
   background-color: var(--background);
   min-height: 250px;
   position: relative;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: inset 0 1px 3px rgb(0 0 0 / 5%);
 }
 
 .editor-input {
@@ -111,7 +53,10 @@
   outline: none;
   line-height: 1.6;
   color: var(--text-color);
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
   padding: 16px;
   font-size: 16px;
 }
@@ -137,13 +82,68 @@
   text-decoration: underline line-through;
 }
 
+/* Table structure.
+   The Lexical theme maps tables to Tailwind-style utility class names that this
+   project does not ship, so without these rules tables render with no borders
+   and their grid structure is invisible while editing — making it very hard to
+   tell where cells begin/end or to navigate in and out of the table. These
+   rules are scoped to .editor-input so only the editing surface is affected;
+   exported HTML is cleaned separately and styled by the consuming app. */
+.editor-input table {
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: auto;
+  margin: 1rem 0;
+  border: 2px solid var(--primary-color);
+}
+
+.editor-input th,
+.editor-input td {
+  border: 1px solid var(--border-color);
+  padding: 8px 10px;
+  min-width: 5rem;
+  vertical-align: top;
+  text-align: start;
+}
+
+/* Header cells are visually distinct so the header row/column is obvious. */
+.editor-input th {
+  background-color: var(--primary-light);
+  font-weight: 600;
+}
+
+/* Zebra striping makes row boundaries easy to follow while navigating. */
+.editor-input tbody tr:nth-child(even) td {
+  background-color: rgb(67 97 238 / 4%);
+}
+
+/* Lexical adds this class to the table while cells are being drag-selected;
+   suppress native text selection so the cell-range highlight reads clearly. */
+.editor-input table.editor-table-selection {
+  user-select: none;
+}
+
+/* Forced-colors mode drops the custom border colors above; fall back to the
+   system colors so the grid stays visible. */
+@media (forced-colors: active) {
+  .editor-input table,
+  .editor-input th,
+  .editor-input td {
+    border: 1px solid CanvasText;
+  }
+
+  .editor-input th {
+    background-color: Canvas;
+  }
+}
+
 .editor-placeholder {
+  /* No opacity: #757575 on white is 4.6:1 (AA); dimming it failed axe */
   color: var(--text-light);
   position: absolute;
   pointer-events: none;
   padding: 16px;
   font-style: italic;
-  opacity: 0.6;
 }
 
 .editor-preview {
@@ -153,22 +153,13 @@
   min-height: 200px;
   line-height: 1.6;
   color: var(--text-color);
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
-/* Link hover styles in editor content */
-.editor-container a:hover {
-  color: var(--primary-dark);
-  text-decoration: underline;
+  box-shadow: inset 0 1px 3px rgb(0 0 0 / 5%);
 }
 
 .editor-docs-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  inset: 0;
+  background-color: rgb(0 0 0 / 50%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -182,7 +173,7 @@
   max-width: 90%;
   max-height: 80vh;
   overflow-y: auto;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 15px rgb(0 0 0 / 10%);
   border-radius: 4px;
   color: var(--text-color);
   font-family: system-ui, sans-serif;
@@ -193,13 +184,29 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1rem;
-  border-bottom: 1px solid rgba(128, 83, 148, 0.2);
+  border-bottom: 1px solid rgb(67 97 238 / 20%);
   padding-bottom: 8px;
 }
 
 .editor-docs-header h2 {
   margin: 0;
   color: var(--primary-dark);
+}
+
+@media screen and (prefers-reduced-motion: reduce) {
+  .close-docs-button {
+    background: transparent;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--text-light);
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: none;
+  }
 }
 
 .close-docs-button {
@@ -216,31 +223,57 @@
   transition: var(--transition);
 }
 
-.close-docs-button:hover {
-  color: var(--primary-color);
-}
-
+.close-docs-button:hover,
 .close-docs-button:focus {
-  outline: 3px solid var(--focus-color);
-  outline-offset: 2px;
+  color: var(--primary-color);
 }
 
 .editor-docs-body h3 {
   color: var(--primary-dark);
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
 }
 
-.editor-docs-body ul {
-  list-style: none;
-  padding-left: 0;
+.editor-docs-platform-note {
+  margin: 0 0 1rem;
+  color: var(--text-light);
+  font-size: 0.9em;
+}
+
+/* Responsive multi-column layout for the shortcut categories. Each section is
+   kept whole so a category never splits across columns. */
+.shortcuts-sections {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.25rem 2rem;
+  margin-bottom: 1.25rem;
 }
 
-.editor-docs-body li {
-  margin-bottom: 0.75em;
-  display: flex;
-  align-items: center;
+.shortcuts-section {
+  min-width: 0;
+}
+
+/* Two-column key/description grid. `display: contents` on each row lets the
+   <dt> (keys) and <dd> (label) align to the parent grid's two tracks, so the
+   key combos and their descriptions never overlap regardless of length. */
+.shortcuts-list {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.4rem 1rem;
+  margin: 0;
+}
+
+.shortcut-row {
+  display: contents;
+}
+
+.shortcuts-list dt {
+  white-space: nowrap;
+}
+
+.shortcuts-list dd {
+  margin: 0;
+  align-self: center;
 }
 
 kbd {
@@ -249,35 +282,37 @@ kbd {
   border: 1px solid var(--border-color);
   font-size: 0.85em;
   background: var(--background);
-  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  box-shadow: 0 1px 1px rgb(0 0 0 / 10%);
+  font-family: SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
   margin: 0 2px;
 }
 
-/* Shortcut component styles */
-.shortcut-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 0.5em;
-}
-
-.shortcut-keys {
-  display: flex;
-  align-items: center;
-  gap: 2px;
+/* Real tooltip shown on toolbar button hover/focus (not a title attribute).
+   Positioned via inline top/left (the button's center, just below it); the
+   transform centers it horizontally. pointer-events:none so it never steals the
+   hover. The dark surface on white text clears WCAG AA contrast. */
+.editor-tooltip {
+  position: fixed;
+  transform: translateX(-50%);
+  z-index: 1100;
+  max-width: 16rem;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background-color: #1f2933;
+  color: #fff;
+  font-size: 0.8125rem;
+  line-height: 1.4;
   white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 25%);
 }
 
-.key-separator {
-  color: var(--text-light);
-  font-size: 0.85em;
-  margin: 0 1px;
-}
-
-.shortcut-description {
-  color: var(--text-color);
-  font-size: 0.9em;
+/* Keep the tooltip legible in forced-colors mode, where the dark background and
+   shadow are dropped. */
+@media (forced-colors: active) {
+  .editor-tooltip {
+    border: 1px solid CanvasText;
+  }
 }
 
 .editor-toolbar {
@@ -286,7 +321,8 @@ kbd {
   gap: 12px;
   padding: 5px;
   background-color: #f8f9fa;
-  border-bottom: 1px solid var(--border-color);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 5%);
 }
 
 .toolbar-group {
@@ -318,6 +354,23 @@ kbd {
   color: var(--primary-dark);
 }
 
+@media screen and (prefers-reduced-motion: reduce) {
+  .editor-toolbar button {
+    height: 36px;
+    min-width: 36px;
+    background-color: var(--background);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 0 10px;
+    transition: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
 .editor-toolbar button {
   height: 36px;
   min-width: 36px;
@@ -337,16 +390,52 @@ kbd {
   background-color: var(--primary-light);
   border-color: var(--primary-color);
   color: var(--primary-color);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgb(0 0 0 / 8%);
 }
 
 .editor-toolbar button:active {
+  transform: translateY(0);
   box-shadow: none;
+}
+
+/* Convey the disabled state to sighted users too: undo/redo use aria-disabled
+   (not native :disabled) so they stay focusable/announced, but without this the
+   button would still look active and clickable. Dim the icon rather than the
+   whole button — element opacity would also fade the box-shadow focus ring,
+   making the focus indicator a different (lighter) color than other buttons. */
+.editor-toolbar button[aria-disabled='true'] {
+  cursor: not-allowed;
+}
+
+.editor-toolbar button[aria-disabled='true'] svg {
+  opacity: 50%;
+}
+
+.editor-toolbar button[aria-disabled='true']:hover {
+  background-color: var(--background);
+  border-color: var(--border-color);
+  color: var(--text-color);
+  transform: none;
+  box-shadow: none;
+}
+
+/* A disabled toolbar button (undo/redo use aria-disabled, not native disabled)
+   is still keyboard-focusable, so it must keep the same visible focus ring as
+   every other button. The previous combined hover/focus rule set
+   `box-shadow: none`, which erased the focus indicator (it is carried by
+   box-shadow, since outline is none). */
+.editor-toolbar button[aria-disabled='true']:focus {
+  background-color: var(--background);
+  border-color: var(--border-color);
+  color: var(--text-color);
+  transform: none;
+  box-shadow: 0 0 0 2px rgb(67 97 238 / 30%);
 }
 
 /* Universal active state for all toolbar buttons */
 .editor-toolbar button.active,
-.editor-toolbar button[aria-pressed="true"] {
+.editor-toolbar button[aria-pressed='true'] {
   background-color: var(--primary-light);
   border-color: var(--primary-color);
   color: var(--primary-dark);
@@ -355,14 +444,31 @@ kbd {
 }
 
 /* Ensure all buttons have the same active state styling */
-.editor-toolbar button[aria-pressed="true"] svg,
+.editor-toolbar button[aria-pressed='true'] svg,
 .editor-toolbar button.active svg {
   color: var(--primary-dark);
 }
 
+/* In Windows High Contrast / forced-colors mode the system overrides
+   background-color and drops box-shadow, which would hide the pressed state
+   from sighted users. A border keyed to the system Highlight color keeps the
+   selected state visible there. (Screen-reader users always get aria-pressed.) */
+@media (forced-colors: active) {
+  .editor-toolbar button.active,
+  .editor-toolbar button[aria-pressed='true'] {
+    border: 2px solid Highlight;
+    color: Highlight;
+  }
+
+  .editor-toolbar button[aria-pressed='true'] svg,
+  .editor-toolbar button.active svg {
+    color: Highlight;
+  }
+}
+
 .editor-toolbar button:focus {
-  outline: 3px solid var(--focus-color);
-  outline-offset: 2px;
+  outline: none;
+  box-shadow: 0 0 0 2px rgb(67 97 238 / 30%);
 }
 
 /* Button styling */
@@ -374,7 +480,11 @@ kbd {
   gap: 6px;
 }
 
-.icon-link, .icon-bold, .icon-italic, .icon-underline, .icon-strikethrough {
+.icon-link,
+.icon-bold,
+.icon-italic,
+.icon-underline,
+.icon-strikethrough {
   color: var(--primary-color);
 }
 
@@ -388,27 +498,41 @@ kbd {
   font-size: 13px;
 }
 
-.heading-button:nth-child(1) { font-size: 16px; }
-.heading-button:nth-child(2) { font-size: 15px; }
-.heading-button:nth-child(3) { font-size: 14px; }
-.heading-button:nth-child(4) { font-size: 13px; }
-.heading-button:nth-child(5) { font-size: 12px; }
-.heading-button:nth-child(6) { font-size: 11px; }
+.heading-button:nth-child(1) {
+  font-size: 16px;
+}
+
+.heading-button:nth-child(2) {
+  font-size: 15px;
+}
+
+.heading-button:nth-child(3) {
+  font-size: 14px;
+}
+
+.heading-button:nth-child(4) {
+  font-size: 13px;
+}
+
+.heading-button:nth-child(5) {
+  font-size: 12px;
+}
+
+.heading-button:nth-child(6) {
+  font-size: 11px;
+}
 
 /* Preserve font size for active heading buttons */
 .heading-button.active,
-.heading-button[aria-pressed="true"] {
+.heading-button[aria-pressed='true'] {
   font-size: inherit;
 }
 
 /* Link Dialog Styles */
 .link-dialog-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  inset: 0;
+  background-color: rgb(0 0 0 / 50%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -420,11 +544,12 @@ kbd {
   padding: 20px;
   width: 400px;
   max-width: 90%;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 15px rgb(0 0 0 / 10%);
   cursor: default;
 }
 
-.link-dialog h2 {
+.link-dialog h2,
+.link-dialog h3 {
   margin-top: 0;
   margin-bottom: 15px;
   color: var(--text-color);
@@ -449,6 +574,15 @@ kbd {
   font-size: 14px;
 }
 
+@media screen and (prefers-reduced-motion: reduce) {
+  .form-group input {
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    font-size: 14px;
+    transition: none;
+  }
+}
+
 .form-group input {
   padding: 8px 12px;
   border: 1px solid var(--border-color);
@@ -457,9 +591,86 @@ kbd {
 }
 
 .form-group input:focus {
-  outline: 3px solid var(--focus-color);
-  outline-offset: 2px;
+  outline: none;
   border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgb(67 97 238 / 20%);
+}
+
+/* Image upload drop zone (rendered only when an upload handler is configured) */
+.image-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  border: 2px dashed var(--border-color);
+  border-radius: 6px;
+  text-align: center;
+  background-color: var(--primary-light);
+}
+
+.image-dropzone.dragover {
+  border-color: var(--primary-color);
+  background-color: #dbe4ff;
+}
+
+.image-dropzone-hint {
+  margin: 0;
+  color: var(--text-light);
+  font-size: 14px;
+}
+
+@media screen and (prefers-reduced-motion: reduce) {
+  .upload-button {
+    transition: none;
+  }
+}
+
+.upload-button {
+  padding: 6px 14px;
+  border: 1px solid var(--primary-color);
+  border-radius: 4px;
+  background-color: var(--background);
+  color: var(--primary-dark);
+  font-size: 14px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.upload-button:hover,
+.upload-button:focus {
+  background-color: var(--primary-color);
+  color: #fff;
+}
+
+.upload-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgb(67 97 238 / 30%);
+}
+
+/* aria-live region for upload progress/errors */
+.upload-status {
+  margin: 4px 0 0;
+  min-height: 1.2em;
+  font-size: 13px;
+  color: var(--text-light);
+}
+
+.upload-status-error {
+  color: var(--error-color);
+}
+
+/* Visually hide the native file input while keeping it operable */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 
 .link-dialog-buttons {
@@ -469,7 +680,52 @@ kbd {
   margin-top: 10px;
 }
 
-.cancel-button, .insert-button {
+@media screen and (prefers-reduced-motion: reduce) {
+  .cancel-button,
+  .insert-button {
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: none;
+  }
+}
+
+@media screen and (prefers-reduced-motion: reduce) {
+  .cancel-button,
+  .insert-button {
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: none;
+  }
+}
+
+@media screen and (prefers-reduced-motion: reduce) {
+  .cancel-button,
+  .insert-button {
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: none;
+  }
+}
+
+@media screen and (prefers-reduced-motion: reduce) {
+  .cancel-button,
+  .insert-button {
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: none;
+  }
+}
+
+.cancel-button,
+.insert-button {
   padding: 8px 16px;
   font-size: 14px;
   font-weight: 500;
@@ -477,19 +733,16 @@ kbd {
   transition: var(--transition);
 }
 
+/* Must follow the base rule above so the cascade actually disables the transition. */
 .cancel-button {
   background-color: #f1f1f1;
   border: 1px solid var(--border-color);
   color: var(--text-color);
 }
 
-.cancel-button:hover {
-  background-color: #e1e1e1;
-}
-
+.cancel-button:hover,
 .cancel-button:focus {
-  outline: 3px solid var(--focus-color);
-  outline-offset: 2px;
+  background-color: #e1e1e1;
 }
 
 .insert-button {
@@ -498,13 +751,15 @@ kbd {
   color: white;
 }
 
-.insert-button:hover {
+.insert-button:hover,
+.insert-button:focus {
   background-color: var(--primary-dark);
 }
 
-.insert-button:focus {
-  outline: 3px solid var(--focus-color);
-  outline-offset: 2px;
+.insert-button:disabled {
+  background-color: #b3c1f7;
+  border-color: #b3c1f7;
+  cursor: not-allowed;
 }
 
 /* Example styling */
@@ -512,7 +767,18 @@ kbd {
   max-width: 900px;
   margin: 0 auto;
   padding: 30px;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    Oxygen,
+    Ubuntu,
+    Cantarell,
+    'Open Sans',
+    'Helvetica Neue',
+    sans-serif;
 }
 
 .output-container {
@@ -526,8 +792,67 @@ kbd {
   padding: 16px;
   overflow: auto;
   max-height: 250px;
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-family: SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
   font-size: 14px;
   border: 1px solid var(--border-color);
   line-height: 1.5;
+}
+
+.editor-outline {
+  margin-top: 12px;
+  padding: 12px 16px;
+  border: 1px solid var(--border-color);
+}
+
+.editor-outline-title {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+
+.editor-outline-warning {
+  font-weight: 600;
+}
+
+.editor-outline-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.editor-outline-link {
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+  font-size: 1rem;
+  padding: 2px 4px;
+}
+
+.editor-outline-tag {
+  font-weight: 700;
+}
+
+.editor-word-count {
+  padding: 6px 12px;
+  font-size: 0.875rem;
+  text-align: right;
+  border-top: 1px solid var(--border-color);
+}
+
+.editor-text-code {
+  font-family: SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+  background-color: #f1f3f5;
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.editor-code-block {
+  display: block;
+  font-family: SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+  background-color: #f8f9fa;
+  padding: 12px 16px;
+  margin: 8px 0;
+  border: 1px solid var(--border-color);
+  overflow-x: auto;
+  white-space: pre;
 }
