@@ -1092,7 +1092,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs, onImageUpload }) {
         <button
           onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'strikethrough')}
           aria-label={t('strikethrough')}
-          {...getTriggerProps('strikethrough', t('strikethrough'))}
+          {...getTriggerProps('strikethrough', `${t('strikethrough')} (${modKey}+Shift+X)`)}
           className={isStrikethrough ? 'active' : ''}
           aria-pressed={isStrikethrough}
         >
@@ -1131,7 +1131,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs, onImageUpload }) {
         <button
           onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'code')}
           aria-label={t('inlineCode')}
-          {...getTriggerProps('inlineCode', t('inlineCode'))}
+          {...getTriggerProps('inlineCode', `${t('inlineCode')} (${modKey}+E)`)}
           className={isInlineCode ? 'active' : ''}
           aria-pressed={isInlineCode}
         >
@@ -1163,7 +1163,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs, onImageUpload }) {
         <button
           onClick={toggleCodeBlock}
           aria-label={t('codeBlock')}
-          {...getTriggerProps('codeBlock', t('codeBlock'))}
+          {...getTriggerProps('codeBlock', `${t('codeBlock')} (${modKey}+Shift+E)`)}
           className={`code-block-button ${isCodeBlockActive ? 'active' : ''}`}
           aria-pressed={isCodeBlockActive}
         >
@@ -1196,7 +1196,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs, onImageUpload }) {
         <button
           onClick={clearFormatting}
           aria-label={t('clearFormatting')}
-          {...getTriggerProps('clearFormatting', t('clearFormatting'))}
+          {...getTriggerProps('clearFormatting', `${t('clearFormatting')} (${modKey}+\\)`)}
           className="clear-formatting-button"
         >
           <svg
@@ -1350,7 +1350,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs, onImageUpload }) {
           className="image-button"
           onClick={() => setShowImageDialog(true)}
           aria-label={t('insertImage')}
-          {...getTriggerProps('insertImage', t('insertImage'))}
+          {...getTriggerProps('insertImage', `${t('insertImage')} (${modKey}+Shift+M)`)}
         >
           <svg
             className="icon-image"
@@ -1376,7 +1376,7 @@ export function ToolbarPlugin({ showDocs, setShowDocs, onImageUpload }) {
           className="table-button"
           onClick={() => setShowTableDialog(true)}
           aria-label={t('insertTable')}
-          {...getTriggerProps('insertTable', t('insertTable'))}
+          {...getTriggerProps('insertTable', `${t('insertTable')} (${modKey}+Shift+L)`)}
         >
           <svg
             className="icon-table"
@@ -1502,7 +1502,10 @@ export function ToolbarPlugin({ showDocs, setShowDocs, onImageUpload }) {
           type="button"
           onClick={() => editor.dispatchCommand(INSERT_HORIZONTAL_RULE_COMMAND, undefined)}
           aria-label={t('insertHorizontalRule')}
-          {...getTriggerProps('insertHorizontalRule', t('insertHorizontalRule'))}
+          {...getTriggerProps(
+            'insertHorizontalRule',
+            `${t('insertHorizontalRule')} (${modKey}+Shift+-)`,
+          )}
           className="horizontal-rule-button"
         >
           <svg
