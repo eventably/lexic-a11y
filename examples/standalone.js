@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import Editor from '../src/components/Editor';
 import { I18nextProvider } from 'react-i18next';
-import i18n from '../src/utils/i18n';
+import Editor from '../src/components/Editor';
 import '../src/styles/Editor.css';
+import i18n from '../src/utils/i18n';
 
 function SimpleEditorDemo() {
   const [content, setContent] = useState('');
@@ -30,9 +30,9 @@ document.addEventListener('DOMContentLoaded', () => {
     root.render(
       <React.StrictMode>
         <SimpleEditorDemo />
-      </React.StrictMode>
+      </React.StrictMode>,
     );
   } else {
-    console.error("Container element #example-root not found!");
+    console.error('Container element #example-root not found!');
   }
 });

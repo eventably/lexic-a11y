@@ -28,9 +28,9 @@ try {
 // Start the Parcel server
 console.log('Starting example server...');
 try {
-  execSync(`npx parcel serve examples/index.html --port ${PORT} --open`, { 
+  execSync(`npx parcel serve examples/index.html --port ${PORT} --open`, {
     stdio: 'inherit',
-    cwd: path.resolve(__dirname, '..')
+    cwd: path.resolve(__dirname, '..'),
   });
 } catch (error) {
   console.error('Failed to start example server:', error);

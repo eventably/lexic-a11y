@@ -4,7 +4,7 @@ import '@testing-library/jest-dom';
 // Mock browser environment for tests
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
-  value: jest.fn().mockImplementation(query => ({
+  value: jest.fn().mockImplementation((query) => ({
     matches: false,
     media: query,
     onchange: null,
@@ -18,3 +18,8 @@ Object.defineProperty(window, 'matchMedia', {
 
 // Mock canvas
 HTMLCanvasElement.prototype.getContext = jest.fn();
+
+// jsdom does not provide TextEncoder/TextDecoder (needed by @afixt/a11y-assert)
+const { TextDecoder, TextEncoder } = require('node:util');
+global.TextEncoder = global.TextEncoder || TextEncoder;
+global.TextDecoder = global.TextDecoder || TextDecoder;
