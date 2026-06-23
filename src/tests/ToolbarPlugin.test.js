@@ -2,7 +2,7 @@ import { $createCodeNode, $isCodeNode } from '@lexical/code';
 import { $isLinkNode } from '@lexical/link';
 import { $createQuoteNode, $isQuoteNode } from '@lexical/rich-text';
 import { $setBlocksType } from '@lexical/selection';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { $createParagraphNode } from 'lexical';
 import { I18nextProvider } from 'react-i18next';
@@ -443,6 +443,80 @@ describe('ToolbarPlugin Component', () => {
 
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
       expect($insertNodes).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('image upload (when an upload handler is configured)', () => {
+    const pngFile = () => new File(['x'], 'cat.png', { type: 'image/png' });
+    const openImageDialog = (user) => user.click(screen.getByLabelText('Insert Image'));
+
+    it('does not render the drop zone when no upload handler is provided', async () => {
+      const user = userEvent.setup();
+      renderWithI18n(<ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} />);
+      await openImageDialog(user);
+
+      expect(screen.queryByRole('button', { name: 'Choose image file' })).not.toBeInTheDocument();
+    });
+
+    it('renders a drop zone and file picker when a handler is provided', async () => {
+      const user = userEvent.setup();
+      renderWithI18n(
+        <ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} onImageUpload={jest.fn()} />,
+      );
+      await openImageDialog(user);
+
+      expect(screen.getByRole('button', { name: 'Choose image file' })).toBeInTheDocument();
+    });
+
+    it('uploads a selected file and fills the URL from the handler result', async () => {
+      const onImageUpload = jest.fn().mockResolvedValue('https://cdn.test/cat.png');
+      const user = userEvent.setup();
+      const { container } = renderWithI18n(
+        <ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} onImageUpload={onImageUpload} />,
+      );
+      await openImageDialog(user);
+
+      const fileInput = container.querySelector('input[type="file"]');
+      fireEvent.change(fileInput, { target: { files: [pngFile()] } });
+
+      await waitFor(() => expect(onImageUpload).toHaveBeenCalledTimes(1));
+      expect(onImageUpload.mock.calls[0][0]).toBeInstanceOf(File);
+      await waitFor(() =>
+        expect(screen.getByLabelText(/paste an image URL/i)).toHaveValue(
+          'https://cdn.test/cat.png',
+        ),
+      );
+    });
+
+    it('rejects a non-image file and does not call the handler', async () => {
+      const onImageUpload = jest.fn();
+      const user = userEvent.setup();
+      const { container } = renderWithI18n(
+        <ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} onImageUpload={onImageUpload} />,
+      );
+      await openImageDialog(user);
+
+      const fileInput = container.querySelector('input[type="file"]');
+      fireEvent.change(fileInput, {
+        target: { files: [new File(['x'], 'note.txt', { type: 'text/plain' })] },
+      });
+
+      expect(onImageUpload).not.toHaveBeenCalled();
+      expect(screen.getByRole('status')).toHaveTextContent(/not an image/i);
+    });
+
+    it('surfaces an error when the upload handler rejects', async () => {
+      const onImageUpload = jest.fn().mockRejectedValue(new Error('network'));
+      const user = userEvent.setup();
+      const { container } = renderWithI18n(
+        <ToolbarPlugin showDocs={false} setShowDocs={setShowDocs} onImageUpload={onImageUpload} />,
+      );
+      await openImageDialog(user);
+
+      const fileInput = container.querySelector('input[type="file"]');
+      fireEvent.change(fileInput, { target: { files: [pngFile()] } });
+
+      await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(/Upload failed/i));
     });
   });
 

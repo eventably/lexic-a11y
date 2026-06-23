@@ -40,7 +40,7 @@ import { isSafeUrl, sanitizeUrl } from '../utils/sanitize-url';
 
 import { $createImageNode } from './ImageNode';
 
-export function ToolbarPlugin({ showDocs, setShowDocs }) {
+export function ToolbarPlugin({ showDocs, setShowDocs, onImageUpload }) {
   const [editor] = useLexicalComposerContext();
   const { t } = useTranslation();
   const [showLinkDialog, setShowLinkDialog] = useState(false);
@@ -58,9 +58,15 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
   const [imageUrl, setImageUrl] = useState('');
   const [imageAlt, setImageAlt] = useState('');
   const [imageDecorative, setImageDecorative] = useState(false);
+  // Upload UI is only offered when the host app configures an upload handler.
+  const canUploadImage = typeof onImageUpload === 'function';
+  const [isDraggingImage, setIsDraggingImage] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState('idle'); // idle | uploading | error
+  const [uploadMessage, setUploadMessage] = useState('');
   const dialogRef = useRef(null);
   const urlInputRef = useRef(null);
   const imageUrlInputRef = useRef(null);
+  const imageFileInputRef = useRef(null);
 
   // Alt text is required unless the image is explicitly marked decorative
   const canInsertImage = Boolean(imageUrl.trim() && (imageAlt.trim() !== '' || imageDecorative));
@@ -70,7 +76,40 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
     setImageUrl('');
     setImageAlt('');
     setImageDecorative(false);
+    setIsDraggingImage(false);
+    setUploadStatus('idle');
+    setUploadMessage('');
   }, []);
+
+  // Run a dropped/selected file through the configured upload handler and use
+  // the returned URL. The handler owns where the bytes actually go (S3, API,
+  // data URL, …); this component only needs a URL back.
+  const handleImageFile = useCallback(
+    async (file) => {
+      if (!canUploadImage || !file) return;
+      if (!file.type || !file.type.startsWith('image/')) {
+        setUploadStatus('error');
+        setUploadMessage(t('imageUploadInvalidType'));
+        return;
+      }
+      setUploadStatus('uploading');
+      setUploadMessage(t('imageUploading'));
+      try {
+        const url = await onImageUpload(file);
+        if (typeof url !== 'string' || url.trim() === '') {
+          throw new Error('Upload handler did not return a URL');
+        }
+        setImageUrl(url.trim());
+        setUploadStatus('idle');
+        setUploadMessage(t('imageUploadComplete'));
+      } catch (error) {
+        console.error('Image upload failed:', error);
+        setUploadStatus('error');
+        setUploadMessage(t('imageUploadError'));
+      }
+    },
+    [canUploadImage, onImageUpload, t],
+  );
 
   const insertImage = useCallback(() => {
     if (!canInsertImage) return;
@@ -1615,8 +1654,61 @@ export function ToolbarPlugin({ showDocs, setShowDocs }) {
           >
             <h3 id="image-dialog-title">{t('insertImage')}</h3>
             <div className="link-dialog-form">
+              {canUploadImage ? (
+                <div className="form-group">
+                  <div
+                    className={`image-dropzone ${isDraggingImage ? 'dragover' : ''}`}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setIsDraggingImage(true);
+                    }}
+                    onDragLeave={() => setIsDraggingImage(false)}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setIsDraggingImage(false);
+                      handleImageFile(e.dataTransfer.files && e.dataTransfer.files[0]);
+                    }}
+                    role="presentation"
+                  >
+                    <p className="image-dropzone-hint">{t('imageDropHint')}</p>
+                    <button
+                      type="button"
+                      className="upload-button"
+                      onClick={() => imageFileInputRef.current && imageFileInputRef.current.click()}
+                    >
+                      {t('chooseImageFile')}
+                    </button>
+                    {/* Hidden native input; the button above is the accessible
+                        control, so keep the input out of the tab order. */}
+                    <input
+                      ref={imageFileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="visually-hidden"
+                      tabIndex={-1}
+                      aria-hidden="true"
+                      onChange={(e) => {
+                        handleImageFile(e.target.files && e.target.files[0]);
+                        // Allow re-selecting the same file later
+                        e.target.value = '';
+                      }}
+                    />
+                  </div>
+                  <p
+                    className={`upload-status ${
+                      uploadStatus === 'error' ? 'upload-status-error' : ''
+                    }`}
+                    role="status"
+                    aria-live="polite"
+                  >
+                    {uploadMessage}
+                  </p>
+                </div>
+              ) : null}
               <div className="form-group">
-                <label htmlFor="image-url">{t('url')}:</label>
+                <label htmlFor="image-url">
+                  {canUploadImage ? t('orPasteUrl') : `${t('url')}:`}
+                </label>
                 <input
                   ref={imageUrlInputRef}
                   type="text"
