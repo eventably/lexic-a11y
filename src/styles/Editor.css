@@ -271,6 +271,34 @@ kbd {
   margin: 0 2px;
 }
 
+/* Real tooltip shown on toolbar button hover/focus (not a title attribute).
+   Positioned via inline top/left (the button's center, just below it); the
+   transform centers it horizontally. pointer-events:none so it never steals the
+   hover. The dark surface on white text clears WCAG AA contrast. */
+.editor-tooltip {
+  position: fixed;
+  transform: translateX(-50%);
+  z-index: 1100;
+  max-width: 16rem;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background-color: #1f2933;
+  color: #fff;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 25%);
+}
+
+/* Keep the tooltip legible in forced-colors mode, where the dark background and
+   shadow are dropped. */
+@media (forced-colors: active) {
+  .editor-tooltip {
+    border: 1px solid CanvasText;
+  }
+}
+
 .editor-toolbar {
   display: flex;
   flex-wrap: wrap;
