@@ -115,8 +115,8 @@ In your React application, import the main Editor component:
 
 ```javascript
 import React, { useState } from 'react';
-import Editor from '@eventably/lexic-a11y';
-import '@eventably/lexic-a11y/dist/styles.css'; // Import the styles
+import Editor from '@afixt/lexic-a11y';
+import '@afixt/lexic-a11y/dist/styles.css'; // Import the styles
 
 export default function App() {
   const [content, setContent] = useState('');
@@ -141,7 +141,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { I18nextProvider } from 'react-i18next';
-import i18n from '@eventably/lexic-a11y/dist/i18n';
+import i18n from '@afixt/lexic-a11y/dist/i18n';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
