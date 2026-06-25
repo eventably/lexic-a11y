@@ -12,17 +12,24 @@ const packageJson = require('./package.json');
 const shouldVisualize = process.env.ANALYZE === 'true';
 
 export default {
-  input: 'src/index.js',
+  // Side-effect-free library entry. `src/index.js` is the Vite demo bootstrap
+  // (it renders into `#root`) and must NOT be the published entry, or importing
+  // the package would try to mount the demo app in the host page.
+  input: 'src/lib.js',
   output: [
     {
       file: packageJson.main,
       format: 'cjs',
       sourcemap: true,
+      // The entry intentionally has a default export (Editor) plus named
+      // exports (i18n, ToolbarPlugin); 'named' keeps default at `.default`.
+      exports: 'named',
     },
     {
       file: packageJson.module,
       format: 'esm',
       sourcemap: true,
+      exports: 'named',
     },
   ],
   plugins: [

@@ -17,9 +17,19 @@ function readFileAsDataUrl(file) {
   });
 }
 
+// Demo helper: let `?seed=<html>` pre-fill the editor so the initialValue
+// behaviour can be exercised in the browser and E2E tests.
+function getSeedFromUrl() {
+  if (typeof window === 'undefined') {
+    return undefined;
+  }
+  return new URLSearchParams(window.location.search).get('seed') || undefined;
+}
+
 export default function App() {
   const [content, setContent] = useState('');
   const [outputFormat, setOutputFormat] = useState('html');
+  const [initialValue] = useState(getSeedFromUrl);
 
   return (
     <I18nextProvider i18n={i18n}>
@@ -52,6 +62,7 @@ export default function App() {
           onContentChange={setContent}
           outputFormat={outputFormat}
           onImageUpload={readFileAsDataUrl}
+          initialValue={initialValue}
         />
         <h2>Output ({outputFormat === 'markdown' ? 'Markdown' : 'HTML'})</h2>
         <pre>{content}</pre>
