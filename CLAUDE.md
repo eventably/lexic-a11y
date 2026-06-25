@@ -73,3 +73,7 @@ This project follows **Git Flow**. You MUST adhere to this branching strategy:
 - Follow i18n patterns using react-i18next's useTranslation hook
 - Always provide alt text for images and proper ARIA attributes
 - Run ESLint with jsx-a11y plugin to catch accessibility issues
+
+## Reviewing PRs
+
+Whenever I ask to review a PR (pull request), use the `pr-review` skill.
