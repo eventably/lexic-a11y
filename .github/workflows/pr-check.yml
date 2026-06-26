@@ -71,11 +71,14 @@ jobs:
         with:
           node-version: "lts/*"
           cache: "npm"
+          registry-url: "https://registry.npmjs.org"
 
       - name: Install dependencies
         if: steps.detect.outputs.type == 'node'
         run: npm ci --ignore-scripts
         continue-on-error: true
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Run lint check
         if: steps.detect.outputs.type == 'node'
