@@ -27,6 +27,7 @@ import { isSafeUrl } from '../utils/sanitize-url';
 
 import { HeadingOutlinePlugin } from './HeadingOutlinePlugin';
 import { ImageNode } from './ImageNode';
+import { InitialContentPlugin } from './InitialContentPlugin';
 import { PastePlugin } from './PastePlugin';
 import { ToolbarPlugin } from './ToolbarPlugin';
 import { WordCountPlugin } from './WordCountPlugin';
@@ -158,8 +159,18 @@ function OutputFormatSync({ outputFormat, onContentChange }) {
  *   upload handler. When provided, the Insert Image dialog gains a drag-and-drop
  *   zone and file picker; the handler receives the chosen File and must resolve
  *   to the URL to embed. When omitted, the dialog stays URL-only.
+ * @param {string} [props.initialValue] Optional trusted HTML used to seed the
+ *   editor once, on mount (e.g. a saved draft or a pre-filled template). The
+ *   content is converted faithfully — images, tables, and code blocks are
+ *   preserved. Later changes to this prop are ignored so user edits are never
+ *   clobbered.
  */
-export default function Editor({ onContentChange, outputFormat = 'html', onImageUpload }) {
+export default function Editor({
+  onContentChange,
+  outputFormat = 'html',
+  onImageUpload,
+  initialValue,
+}) {
   const { t } = useTranslation();
   const [showDocs, setShowDocs] = useState(false);
   const [, setHtmlOutput] = useState('');
@@ -184,6 +195,7 @@ export default function Editor({ onContentChange, outputFormat = 'html', onImage
           <MarkdownShortcutPlugin transformers={EDITOR_TRANSFORMERS} />
           <PastePlugin />
           <TablePlugin />
+          {initialValue ? <InitialContentPlugin html={initialValue} /> : null}
           <OnChangePlugin
             onChange={(editorState, editor) => {
               editorState.read(() => {

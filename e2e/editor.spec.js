@@ -135,6 +135,31 @@ test.describe('keyboard navigation and ARIA', () => {
   });
 });
 
+test.describe('initial content', () => {
+  test('seeds the editor from host-provided HTML (initialValue)', async ({ page }) => {
+    const seed = '<h2>Seeded heading</h2><p>Seeded <strong>paragraph</strong></p>';
+    await page.goto(`/?seed=${encodeURIComponent(seed)}`);
+    await expect(page.locator(EDITOR)).toBeVisible();
+
+    // The HTML is parsed into live, semantic nodes (not pasted as plain text).
+    await expect(page.locator(`${EDITOR} h2`)).toHaveText('Seeded heading');
+    await expect(page.locator(`${EDITOR} p strong`)).toHaveText('paragraph');
+  });
+
+  test('seeded content is editable and emits HTML output', async ({ page }) => {
+    await page.goto(`/?seed=${encodeURIComponent('<p>Start</p>')}`);
+    await expect(page.locator(`${EDITOR} p`)).toHaveText('Start');
+
+    // Place the caret at the end of the seeded text and keep typing.
+    await page.locator(`${EDITOR} p`).click();
+    await page.keyboard.press('End');
+    await page.keyboard.type(' and more');
+
+    await expect(page.locator(`${EDITOR} p`)).toContainText('Start and more');
+    await expect(page.locator('pre')).toContainText('Start and more');
+  });
+});
+
 test.describe('accessibility scan', () => {
   test('axe finds no serious or critical violations in the editor UI', async ({ page }) => {
     // Scope the scan to the editor component so unrelated demo-page markup
