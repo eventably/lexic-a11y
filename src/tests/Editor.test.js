@@ -125,6 +125,17 @@ jest.mock('../components/PastePlugin', () => ({
   PastePlugin: () => <div data-testid="paste-plugin" />,
 }));
 
+// Capture the html prop passed to the initial-content plugin so tests can
+// assert the editor seeds from `initialValue`.
+const mockInitialContentCapture = {};
+
+jest.mock('../components/InitialContentPlugin', () => ({
+  InitialContentPlugin: ({ html }) => {
+    mockInitialContentCapture.html = html;
+    return <div data-testid="initial-content-plugin" />;
+  },
+}));
+
 jest.mock('../components/ImageNode', () => ({
   ImageNode: class ImageNode {},
 }));
@@ -169,6 +180,22 @@ describe('Editor Component', () => {
     expect(screen.getByTestId('heading-outline-plugin')).toBeInTheDocument();
     expect(screen.getByTestId('word-count-plugin')).toBeInTheDocument();
     expect(screen.getByTestId('table-plugin')).toBeInTheDocument();
+  });
+
+  it('does not render the initial-content plugin when initialValue is omitted', () => {
+    mockInitialContentCapture.html = undefined;
+    const mockOnContentChange = jest.fn();
+    renderWithI18n(<Editor onContentChange={mockOnContentChange} />);
+
+    expect(screen.queryByTestId('initial-content-plugin')).not.toBeInTheDocument();
+  });
+
+  it('seeds the editor from initialValue when provided', () => {
+    const mockOnContentChange = jest.fn();
+    renderWithI18n(<Editor onContentChange={mockOnContentChange} initialValue="<p>Seed me</p>" />);
+
+    expect(screen.getByTestId('initial-content-plugin')).toBeInTheDocument();
+    expect(mockInitialContentCapture.html).toBe('<p>Seed me</p>');
   });
 
   it('exports a clean semantic <hr> through the HTML cleanup path', () => {

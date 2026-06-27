@@ -1,9 +1,9 @@
 // PastePlugin.js
-import { $generateNodesFromDOM } from '@lexical/html';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { $getSelection, $isRangeSelection, COMMAND_PRIORITY_HIGH, PASTE_COMMAND } from 'lexical';
 import { useEffect, useRef } from 'react';
 
+import { htmlToNodes } from '../utils/html-to-nodes';
 import { sanitizePastedHtml } from '../utils/sanitize-html';
 
 // Sanitizes pasted HTML to the editor's supported node set and provides a
@@ -67,8 +67,7 @@ export function PastePlugin() {
         editor.update(() => {
           try {
             const cleanHtml = sanitizePastedHtml(html);
-            const dom = new DOMParser().parseFromString(cleanHtml, 'text/html');
-            const nodes = $generateNodesFromDOM(editor, dom);
+            const nodes = htmlToNodes(editor, cleanHtml);
             const selection = $getSelection();
             if ($isRangeSelection(selection)) {
               selection.insertNodes(nodes);

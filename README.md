@@ -118,19 +118,39 @@ import React, { useState } from 'react';
 import Editor from '@afixt/lexic-a11y';
 import '@afixt/lexic-a11y/dist/styles.css'; // Import the styles
 
+// Resolve an uploaded File to a hosted URL (POST to your backend in a real app).
+async function uploadImage(file) {
+  const url = await myBackend.upload(file);
+  return url;
+}
+
 export default function App() {
   const [content, setContent] = useState('');
 
   return (
     <div>
       <h1>My Application with Lexical Editor</h1>
-      <Editor onContentChange={setContent} />
+      <Editor
+        onContentChange={setContent}
+        outputFormat="html"
+        onImageUpload={uploadImage}
+        initialValue="<p>Pre-filled <strong>draft</strong> content.</p>"
+      />
       <h2>Output HTML</h2>
       <pre>{content}</pre>
     </div>
   );
 }
 ```
+
+#### Editor props
+
+| Prop              | Type                              | Default  | Description                                                                                                                                                                                                             |
+| ----------------- | --------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `onContentChange` | `(content: string) => void`       | —        | Called on every edit with the serialized content, in the format chosen by `outputFormat`.                                                                                                                               |
+| `outputFormat`    | `'html' \| 'markdown'`            | `'html'` | Format passed to `onContentChange`: cleaned HTML or Markdown. Nodes without a Markdown form (tables, images, horizontal rules, code blocks) are omitted from Markdown output.                                           |
+| `onImageUpload`   | `(file: File) => Promise<string>` | —        | Optional. When provided, the Insert Image dialog gains a drag-and-drop zone and file picker; the handler receives the chosen `File` and must resolve to the URL to embed.                                               |
+| `initialValue`    | `string`                          | —        | Optional trusted HTML used to seed the editor once, on mount (e.g. a saved draft or template). Images, tables, and code blocks are preserved. Later changes to this prop are ignored so user edits are never clobbered. |
 
 #### 2. i18n Setup
 
@@ -171,9 +191,10 @@ styling for the toolbar and editor components.
 - **Internationalization**: Update the i18n.js file to add additional languages
   or modify existing translations. Use the useTranslation hook within any
   component to localize additional UI elements.
-- **Adding Features**: The editor is built with Lexical's modular architecture.
-  To add further formatting options (e.g., images, horizontal rules, tables),
-  follow Lexical's documentation to create and register new nodes.
+- **Adding Features**: The editor ships with images (insert by URL or via the
+  optional `onImageUpload` handler), horizontal rules, and tables built in. To
+  add further formatting options, follow Lexical's modular architecture to
+  create and register new nodes.
 
 ## Development
 
